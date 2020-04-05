@@ -7,7 +7,6 @@ use TRegx\CleanRegex\Match\Details\NotMatched;
 
 echo "Welcome to T-Regx playground! :) \n\n";
 
-
 function yourTestCode()
 {
     // Test your code here...
@@ -15,6 +14,7 @@ function yourTestCode()
 
 # Run examples
 yourTestCode();
+exampleTest();
 exampleAll();
 exampleFirst();
 exampleFindFirst();
@@ -26,9 +26,20 @@ exampleUserInput();
 
 # Examples
 
+function exampleTest()
+{
+    echo "# Test a subject against a pattern all:\n";
+
+    if (pattern("\d{3,}")->test("year 2020")) {
+        echo "Match!";
+    } else {
+        echo "No match :/";
+    }
+}
+
 function exampleAll()
 {
-    echo "# Match all:\n";
+    echo "\n\n# Match all:\n";
 
     $orders = pattern("\d+(s)?")->match("I'll have two number 9s, a number 9 large, a number 6 with extra dip, a number 7, two number 45s, one with cheese, and a large soda.")->all();
     var_dump($orders);
@@ -38,11 +49,9 @@ function exampleFirst()
 {
     echo "\n# Find the first element:\n";
 
-    echo pattern("(John|Brian)")
-        ->match("My name is John")
-        ->first(function (Match $match) {
-            return "I found a name: $match!";
-        });
+    echo pattern("(John|Brian)")->match("My name is John")->first(function (Match $match) {
+        return "I found a name: $match!";
+    });
 }
 
 function exampleFindFirst()
@@ -55,7 +64,8 @@ function exampleFindFirst()
             return "I found a name $match!";
         })
         ->orElse(function (NotMatched $notMatched) {
-            return "Subject: '{$notMatched->subject()}' didn't contain the name :/";
+            $subject = $notMatched->subject();
+            return "Subject: '$subject' didn't contain the name :/";
         });
 }
 
