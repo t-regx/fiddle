@@ -1,2 +1,2 @@
 language = "php_cli"
-run = "php EDIT_HERE.php"
+run = "php EXAMPLES.php"
