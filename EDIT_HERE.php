@@ -13,7 +13,7 @@ pattern('(origin/)?master')->match('origin/master')->first(function (Match $matc
 
 });
 
-##
-## Type "php EDIT_HERE.php" in the console on the right, to run.
-## You can rename the file, as you please.
-##
+/**
+ * Type "php EDIT_HERE.php" in the console on the right, to run.
+ * You can rename the file, as you please.
+ */
