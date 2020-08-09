@@ -7,6 +7,10 @@ use TRegx\CleanRegex\Match\Details\NotMatched;
 
 echo "Welcome to T-Regx playground! :) \n\n";
 
+/**
+ * Click "Run" at the top to run EXAMPLES.php
+ */
+
 function yourTestCode()
 {
     // Test your code here...
