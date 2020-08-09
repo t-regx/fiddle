@@ -1,9 +1,0 @@
-{
-  "name": "rawr/t-regx-playground",
-  "type": "project",
-  "description": "Playground for T-Regx library",
-  "require": {
-    "rawr/t-regx": "^0.9.6"
-  },
-  "license": "MIT"
-}
