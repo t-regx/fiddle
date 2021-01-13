@@ -2,17 +2,18 @@
 namespace TRegx\CleanRegex\Match\Offset;
 
 use InvalidArgumentException;
+use Iterator;
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
-use TRegx\CleanRegex\Internal\Exception\Messages\NoFirstElementFluentMessage;
-use TRegx\CleanRegex\Internal\Factory\NotMatchedFluentOptionalWorker;
+use TRegx\CleanRegex\Internal\Exception\Messages\FirstFluentMessage;
+use TRegx\CleanRegex\Internal\Factory\SecondLevelFluentOptionalWorker;
 use TRegx\CleanRegex\Internal\Match\Base\Base;
 use TRegx\CleanRegex\Internal\Match\Stream\Stream;
 use TRegx\CleanRegex\Match\FluentMatchPattern;
-use TRegx\CleanRegex\Match\Groups\Strategy\MatchAllGroupVerifier;
+use TRegx\CleanRegex\Internal\Match\Groups\Strategy\MatchAllGroupVerifier;
 
-class MatchOffsetLimit implements OffsetLimit, Stream
+class MatchOffsetLimit implements OffsetLimit, Stream, \IteratorAggregate
 {
     /** @var Base */
     private $base;
@@ -66,6 +67,11 @@ class MatchOffsetLimit implements OffsetLimit, Stream
         return $matches->getLimitedGroupOffsets($this->nameOrIndex, -1);
     }
 
+    public function getIterator(): Iterator
+    {
+        return new \ArrayIterator($this->all());
+    }
+
     /**
      * @param int $limit
      * @return (int|null)[]
@@ -84,10 +90,10 @@ class MatchOffsetLimit implements OffsetLimit, Stream
 
     public function fluent(): FluentMatchPattern
     {
-        return new FluentMatchPattern($this, new NotMatchedFluentOptionalWorker(new NoFirstElementFluentMessage()));
+        return new FluentMatchPattern($this, new SecondLevelFluentOptionalWorker(new FirstFluentMessage()));
     }
 
-    public function firstKey()
+    public function firstKey(): int
     {
         return 0;
     }

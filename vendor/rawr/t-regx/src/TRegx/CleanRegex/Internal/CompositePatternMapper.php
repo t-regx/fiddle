@@ -25,14 +25,9 @@ class CompositePatternMapper
             return InternalPattern::standard($pattern);
         }
         if ($pattern instanceof PatternInterface) {
-            return InternalPattern::pcre($pattern->delimiter());
+            return InternalPattern::pcre($pattern->delimited());
         }
-        throw $this->throwInvalidPatternType($pattern);
-    }
-
-    private function throwInvalidPatternType($pattern): InvalidArgumentException
-    {
         $type = Type::asString($pattern);
-        return new InvalidArgumentException("CompositePattern accepts only type Pattern or string, but $type given");
+        throw new InvalidArgumentException("CompositePattern only accepts type PatternInterface or string, but $type given");
     }
 }

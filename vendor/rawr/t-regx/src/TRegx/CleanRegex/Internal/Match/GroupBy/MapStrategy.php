@@ -2,24 +2,24 @@
 namespace TRegx\CleanRegex\Internal\Match\GroupBy;
 
 use TRegx\CleanRegex\Internal\Match\MatchAll\EagerMatchAllFactory;
+use TRegx\CleanRegex\Internal\Model\DetailObjectFactory;
 use TRegx\CleanRegex\Internal\Model\Match\IndexedRawMatchOffset;
-use TRegx\CleanRegex\Internal\Model\Matches\IRawMatchesOffset;
-use TRegx\CleanRegex\Internal\Model\MatchObjectFactory;
+use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 
 class MapStrategy implements Strategy
 {
     /** @var callable */
     private $mapper;
-    /** @var MatchObjectFactory */
+    /** @var DetailObjectFactory */
     private $factory;
 
-    public function __construct(callable $mapper, MatchObjectFactory $factory)
+    public function __construct(callable $mapper, DetailObjectFactory $factory)
     {
         $this->mapper = $mapper;
         $this->factory = $factory;
     }
 
-    function transform(array $groups, IRawMatchesOffset $matches): array
+    public function transform(array $groups, RawMatchesOffset $matches): array
     {
         foreach ($groups as &$group) {
             /** @var IndexedRawMatchOffset $match */

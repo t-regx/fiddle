@@ -1,32 +1,34 @@
 <?php
 namespace TRegx\CleanRegex\Replace\By;
 
-use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\MissingReplacementKeyException;
-use TRegx\CleanRegex\Match\FindFirst\Optional;
+use TRegx\CleanRegex\Replace\GroupReplace;
 
-interface ByGroupReplacePattern extends Optional
+interface ByGroupReplacePattern extends GroupReplace
 {
-    public function orThrow(string $exceptionClassName = GroupNotMatchedException::class): string;
-
-    public function orIgnore(): string;
-
-    public function orEmpty(): string;
-
     /**
      * @param string[] $occurrencesAndReplacements
-     * @return OptionalStrategySelector
+     * @return UnmatchedGroupStrategy
      * @throws \InvalidArgumentException
      * @throws MissingReplacementKeyException
      */
-    public function map(array $occurrencesAndReplacements): OptionalStrategySelector;
+    public function map(array $occurrencesAndReplacements): UnmatchedGroupStrategy;
 
     /**
      * @param string[] $occurrencesAndReplacements
-     * @return OptionalStrategySelector
+     * @return UnmatchedGroupStrategy
      * @throws \InvalidArgumentException
      */
-    public function mapIfExists(array $occurrencesAndReplacements): OptionalStrategySelector;
+    public function mapIfExists(array $occurrencesAndReplacements): UnmatchedGroupStrategy;
 
     public function callback(callable $callback): string;
+
+    /**
+     * @param string[] $occurrencesAndReplacements
+     * @param callable $mapper
+     * @return UnmatchedGroupStrategy
+     * @throws \InvalidArgumentException
+     * @throws MissingReplacementKeyException
+     */
+    public function mapAndCallback(array $occurrencesAndReplacements, callable $mapper): UnmatchedGroupStrategy;
 }

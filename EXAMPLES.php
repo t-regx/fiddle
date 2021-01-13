@@ -2,7 +2,7 @@
 include 'vendor/autoload.php';
 
 use TRegx\CleanRegex\Pattern;
-use TRegx\CleanRegex\Match\Details\Match;
+use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Match\Details\NotMatched;
 
 echo "Welcome to T-Regx playground! :) \n\n";
@@ -53,8 +53,8 @@ function exampleFirst()
 {
     echo "\n# Find the first element:\n";
 
-    echo pattern("(John|Brian)")->match("My name is John")->first(function (Match $match) {
-        return "I found a name: $match!";
+    echo pattern("(John|Brian)")->match("My name is John")->first(function (Detail $detail) {
+        return "I found a name: $detail!";
     });
 }
 
@@ -64,8 +64,8 @@ function exampleFindFirst()
 
     echo pattern("(John|Brian)")
         ->match("My name is Mark")
-        ->findFirst(function (Match $match) {
-            return "I found a name $match!";
+        ->findFirst(function (Detail $detail) {
+            return "I found a name $detail!";
         })
         ->orElse(function (NotMatched $notMatched) {
             $subject = $notMatched->subject();
@@ -95,15 +95,15 @@ function exampleCapturingGroups()
 
     pattern('(?<value>\d+)(?<unit>[cm]?m)?')
         ->match('12cm 14 13mm 19m 2m!')
-        ->forEach(function (Match $match) {
+        ->forEach(function (Detail $detail) {
             // when
-            echo "Match: '$match' (";
-            if ($match->matched('unit')) {
-                echo "Unit: {$match->group('unit')}";
+            echo "Match: '$detail' (";
+            if ($detail->matched('unit')) {
+                echo "Unit: {$detail->group('unit')}";
             } else {
                 echo "No unit";
             }
-            echo ") - value " . ($match->group('value')->isInt() ? 'is' : 'is not') . " an integer\n";
+            echo ") - value " . ($detail->group('value')->isInt() ? 'is' : 'is not') . " an integer\n";
         });
 }
 

@@ -21,7 +21,7 @@ class CompositeQuoteable implements Quoteable
 
     private function mapToQuoteStrings(string $delimiter): array
     {
-        return array_map(function (Quoteable $quoteable) use ($delimiter) {
+        return array_map(static function (Quoteable $quoteable) use ($delimiter) {
             return $quoteable->quote($delimiter);
         }, $this->quoteables);
     }

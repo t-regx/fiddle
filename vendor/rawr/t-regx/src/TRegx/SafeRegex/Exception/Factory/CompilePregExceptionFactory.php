@@ -12,13 +12,16 @@ class CompilePregExceptionFactory
     private $phpErrorConstants;
     /** @var string */
     private $methodName;
+    /** @var string|array */
+    private $pattern;
     /** @var PhpError */
     private $error;
 
-    public function __construct(string $methodName, PhpError $error)
+    public function __construct(string $methodName, $pattern, PhpError $error)
     {
         $this->phpErrorConstants = new PhpErrorConstants();
         $this->methodName = $methodName;
+        $this->pattern = $pattern;
         $this->error = $error;
     }
 
@@ -27,7 +30,8 @@ class CompilePregExceptionFactory
         [$class, $message] = $this->exceptionClassAndMessage($this->error->getMessage());
         return new $class(
             $this->methodName,
-            $message,
+            $this->pattern,
+            $this->cleanMessage($message),
             $this->error,
             $this->phpErrorConstants->getConstant($this->error->getType()));
     }
@@ -48,5 +52,19 @@ class CompilePregExceptionFactory
             return true;
         }
         return false;
+    }
+
+    private function cleanMessage(string $message): string
+    {
+        $value = \str_replace('(PCRE2_DUPNAMES not set) ', '', $message);
+
+        if (\version_compare(\PHP_VERSION, '7.3.0', '<')) {
+            if (\preg_match("/^Two named subpatterns have the same name at offset (\d+)$/", $value, $match)) {
+                $offset = $match[1] + 1; // increase offset by 1, to fix php inconsistencies
+                return "Two named subpatterns have the same name at offset $offset";
+            }
+        }
+
+        return $value;
     }
 }

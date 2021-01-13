@@ -7,8 +7,8 @@ use TRegx\CleanRegex\Internal\Match\GroupBy\MapStrategy;
 use TRegx\CleanRegex\Internal\Match\GroupBy\OffsetsStrategy;
 use TRegx\CleanRegex\Internal\Match\GroupBy\Strategy;
 use TRegx\CleanRegex\Internal\Match\GroupBy\TextsStrategy;
-use TRegx\CleanRegex\Internal\Model\Matches\IRawMatchesOffset;
-use TRegx\CleanRegex\Internal\Model\MatchObjectFactory;
+use TRegx\CleanRegex\Internal\Model\DetailObjectFactory;
+use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 
 class GroupByPattern
 {
@@ -48,9 +48,9 @@ class GroupByPattern
         return $this->groupBy(new FlatMapStrategy($mapper, $this->factory()));
     }
 
-    private function factory(): MatchObjectFactory
+    private function factory(): DetailObjectFactory
     {
-        return new MatchObjectFactory($this->base, -1, $this->base->getUserData());
+        return new DetailObjectFactory($this->base, -1, $this->base->getUserData());
     }
 
     private function groupBy(Strategy $strategy): array
@@ -59,7 +59,7 @@ class GroupByPattern
         return $strategy->transform($this->groupMatches($matches), $matches);
     }
 
-    private function groupMatches(IRawMatchesOffset $matches): array
+    private function groupMatches(RawMatchesOffset $matches): array
     {
         $map = [];
         for ($i = 0; $i < \count($matches->getTexts()); ++$i) {

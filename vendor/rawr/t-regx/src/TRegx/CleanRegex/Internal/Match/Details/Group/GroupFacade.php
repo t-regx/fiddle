@@ -9,21 +9,23 @@ use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Model\Adapter\RawMatchesToMatchAdapter;
 use TRegx\CleanRegex\Internal\Model\IRawWithGroups;
 use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
-use TRegx\CleanRegex\Internal\Model\Matches\IRawMatchesOffset;
+use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\Subjectable;
+use TRegx\CleanRegex\Match\Details\Group\DetailGroup;
 use TRegx\CleanRegex\Match\Details\Group\MatchedGroup;
-use TRegx\CleanRegex\Match\Details\Group\MatchGroup;
 use TRegx\CleanRegex\Match\Details\Group\NotMatchedGroup;
 use TRegx\CleanRegex\Match\Details\NotMatched;
 
 class GroupFacade
 {
-    /** @var GroupNameIndexAssign */
-    private $groupAssign;
     /** @var Subjectable */
     private $subject;
     /** @var string|int */
-    private $group;
+    protected $usedIdentifier;
+    /** @var int */
+    private $index;
+    /** @var string|null */
+    private $name;
     /** @var GroupFactoryStrategy */
     private $factoryStrategy;
     /** @var MatchAllFactory */
@@ -35,23 +37,23 @@ class GroupFacade
                                 GroupFactoryStrategy $factoryStrategy,
                                 MatchAllFactory $allFactory)
     {
-        $this->groupAssign = new GroupNameIndexAssign($groupAssignMatch, $allFactory);
         $this->subject = $subject;
-        $this->group = $group;
+        $this->usedIdentifier = $group;
+        [$this->name, $this->index] = (new GroupNameIndexAssign($groupAssignMatch, $allFactory))->getNameAndIndex($group);
         $this->factoryStrategy = $factoryStrategy;
         $this->allFactory = $allFactory;
     }
 
     /**
-     * @param IRawMatchesOffset $matches
-     * @return MatchGroup[]
+     * @param RawMatchesOffset $matches
+     * @return DetailGroup[]
      */
-    public function createGroups(IRawMatchesOffset $matches): array
+    public function createGroups(RawMatchesOffset $matches): array
     {
         $matchObjects = [];
-        foreach ($matches->getGroupTextAndOffsetAll($this->group) as $index => $firstWhole) {
+        foreach ($matches->getGroupTextAndOffsetAll($this->directIdentifier()) as $index => $firstWhole) {
             $match = new RawMatchesToMatchAdapter($matches, $index);
-            if ($match->isGroupMatched($this->group)) {
+            if ($match->isGroupMatched($this->directIdentifier())) {
                 $matchObjects[] = $this->createdMatched($match, ...$firstWhole);
             } else {
                 $matchObjects[] = $this->createUnmatched($match);
@@ -60,10 +62,10 @@ class GroupFacade
         return $matchObjects;
     }
 
-    public function createGroup(IRawMatchOffset $match): MatchGroup
+    public function createGroup(IRawMatchOffset $match): DetailGroup
     {
-        if ($match->isGroupMatched($this->group)) {
-            return $this->createdMatched($match, ...$match->getGroupTextAndOffset($this->group));
+        if ($match->isGroupMatched($this->directIdentifier())) {
+            return $this->createdMatched($match, ...$match->getGroupTextAndOffset($this->directIdentifier()));
         }
         return $this->createUnmatched($match);
     }
@@ -80,18 +82,26 @@ class GroupFacade
     {
         return $this->factoryStrategy->createUnmatched(
             $this->createGroupDetails(),
-            new GroupExceptionFactory($this->subject, $this->group),
+            new GroupExceptionFactory($this->subject, $this->usedIdentifier),
             new NotMatchedOptionalWorker(
-                new GroupMessage($this->group),
+                new GroupMessage($this->usedIdentifier),
                 $this->subject,
                 new NotMatched($match, $this->subject)
-            )
+            ),
+            $this->subject->getSubject()
         );
     }
 
     private function createGroupDetails(): GroupDetails
     {
-        [$name, $index] = $this->groupAssign->getNameAndIndex($this->group);
-        return new GroupDetails($name, $index, $this->group, $this->allFactory);
+        return new GroupDetails($this->name, $this->index, $this->usedIdentifier, $this->allFactory);
+    }
+
+    /**
+     * @return string|int
+     */
+    protected function directIdentifier()
+    {
+        return $this->index; // when index is used, then compiled (pattern) group is used
     }
 }

@@ -5,18 +5,19 @@ use TRegx\CleanRegex\Exception\MissingReplacementKeyException;
 use TRegx\CleanRegex\Internal\InternalPattern as Pattern;
 use TRegx\CleanRegex\Internal\Match\Base\ApiBase;
 use TRegx\CleanRegex\Internal\Match\UserData;
+use TRegx\CleanRegex\Internal\Replace\By\GroupFallbackReplacer;
+use TRegx\CleanRegex\Internal\Replace\By\IdentityWrapper;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\LazyMessageThrowStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\SubjectRs;
+use TRegx\CleanRegex\Internal\Replace\By\PerformanceEmptyGroupReplace;
 use TRegx\CleanRegex\Internal\Subjectable;
 use TRegx\CleanRegex\Replace\By\ByReplacePattern;
 use TRegx\CleanRegex\Replace\By\ByReplacePatternImpl;
-use TRegx\CleanRegex\Replace\By\GroupFallbackReplacer;
-use TRegx\CleanRegex\Replace\By\PerformanceEmptyGroupReplace;
 use TRegx\CleanRegex\Replace\Callback\MatchStrategy;
 use TRegx\CleanRegex\Replace\Callback\ReplacePatternCallbackInvoker;
-use TRegx\CleanRegex\Replace\NonReplaced\LazyMessageThrowStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\ReplaceSubstitute;
 use TRegx\SafeRegex\preg;
 
-class SpecificReplacePatternImpl implements SpecificReplacePattern, Subjectable
+class SpecificReplacePatternImpl implements SpecificReplacePattern, CompositeReplacePattern, Subjectable
 {
     /** @var Pattern */
     private $pattern;
@@ -27,10 +28,10 @@ class SpecificReplacePatternImpl implements SpecificReplacePattern, Subjectable
     /** @var int */
     private $limit;
 
-    /** @var ReplaceSubstitute */
+    /** @var SubjectRs */
     private $substitute;
 
-    public function __construct(Pattern $pattern, string $subject, int $limit, ReplaceSubstitute $substitute)
+    public function __construct(Pattern $pattern, string $subject, int $limit, SubjectRs $substitute)
     {
         $this->pattern = $pattern;
         $this->subject = $subject;
@@ -70,8 +71,14 @@ class SpecificReplacePatternImpl implements SpecificReplacePattern, Subjectable
             new LazyMessageThrowStrategy(MissingReplacementKeyException::class),
             new PerformanceEmptyGroupReplace($this->pattern, $this, $this->limit),
             $this->replaceCallbackInvoker(),
-            $this->subject
+            $this->subject,
+            new IdentityWrapper()
         );
+    }
+
+    public function focus($nameOrIndex): FocusReplacePattern
+    {
+        return new FocusReplacePattern($this, $this->pattern, $this->subject, $this->limit, $nameOrIndex);
     }
 
     private function replaceCallbackInvoker(): ReplacePatternCallbackInvoker

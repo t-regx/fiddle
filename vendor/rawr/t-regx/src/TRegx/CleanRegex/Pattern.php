@@ -2,12 +2,14 @@
 namespace TRegx\CleanRegex;
 
 use TRegx\CleanRegex\Internal\InternalPattern;
+use TRegx\CleanRegex\Internal\UnquotePattern;
+use TRegx\SafeRegex\preg;
 
 class Pattern
 {
     public static function quote(string $pattern): string
     {
-        return (new QuotePattern($pattern))->quote();
+        return preg::quote($pattern);
     }
 
     public static function unquote(string $pattern): string
@@ -23,7 +25,7 @@ class Pattern
     /**
      * @param string $delimitedPattern
      * @return PatternInterface
-     * @deprecated Please use method \TRegx\CleanRegex\Pattern::of. Method Pattern::pcre() is only present, in case
+     * Please use method \TRegx\CleanRegex\Pattern::of. Method Pattern::pcre() is only present, in case
      * if there's an automatic delimiters' bug, that would make {@link Pattern::of()} error-prone.
      * {@link Pattern::pcre()} is error-prone to MalformedPatternException, because of delimiters.
      * @see \TRegx\CleanRegex\Pattern::of

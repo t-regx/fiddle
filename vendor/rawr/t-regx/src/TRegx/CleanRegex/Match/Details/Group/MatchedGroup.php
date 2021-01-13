@@ -1,7 +1,6 @@
 <?php
 namespace TRegx\CleanRegex\Match\Details\Group;
 
-use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\IntegerFormatException;
 use TRegx\CleanRegex\Internal\ByteOffset;
 use TRegx\CleanRegex\Internal\Integer;
@@ -10,7 +9,7 @@ use TRegx\CleanRegex\Internal\Match\Details\Group\MatchedGroupOccurrence;
 use TRegx\CleanRegex\Internal\Match\Details\Group\MatchGroupReplacer;
 use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
 
-class MatchedGroup implements MatchGroup
+class MatchedGroup implements DetailGroup, MatchGroup
 {
     /** @var IRawMatchOffset */
     private $match;
@@ -21,9 +20,9 @@ class MatchedGroup implements MatchGroup
 
     public function __construct(IRawMatchOffset $match, GroupDetails $details, MatchedGroupOccurrence $matchedDetails)
     {
+        $this->match = $match;
         $this->details = $details;
         $this->occurrence = $matchedDetails;
-        $this->match = $match;
     }
 
     public function text(): string
@@ -54,6 +53,11 @@ class MatchedGroup implements MatchGroup
         return true;
     }
 
+    public function equals(string $expected): bool
+    {
+        return $this->occurrence->text === $expected;
+    }
+
     public function index(): int
     {
         return $this->details->index;
@@ -77,9 +81,19 @@ class MatchedGroup implements MatchGroup
         return ByteOffset::toCharacterOffset($this->occurrence->subject->getSubject(), $this->occurrence->offset);
     }
 
+    public function tail(): int
+    {
+        return ByteOffset::toCharacterOffset($this->occurrence->subject->getSubject(), $this->byteTail());
+    }
+
     public function byteOffset(): int
     {
         return $this->occurrence->offset;
+    }
+
+    public function byteTail(): int
+    {
+        return $this->occurrence->offset + \strlen($this->occurrence->text);
     }
 
     public function replace(string $replacement): string
@@ -87,12 +101,17 @@ class MatchedGroup implements MatchGroup
         return (new MatchGroupReplacer())->replaceGroup($this->match, $this->occurrence, $replacement);
     }
 
+    public function subject(): string
+    {
+        return $this->occurrence->subject->getSubject();
+    }
+
     public function all(): array
     {
         return $this->details->all();
     }
 
-    public function orThrow(string $exceptionClassName = GroupNotMatchedException::class): string
+    public function orThrow(string $exceptionClassName = null): string
     {
         return $this->text();
     }

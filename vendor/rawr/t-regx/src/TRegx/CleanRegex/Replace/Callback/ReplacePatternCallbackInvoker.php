@@ -2,10 +2,9 @@
 namespace TRegx\CleanRegex\Replace\Callback;
 
 use TRegx\CleanRegex\Internal\InternalPattern as Pattern;
-use TRegx\CleanRegex\Internal\Model\Matches\IRawMatchesOffset;
 use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\SubjectRs;
 use TRegx\CleanRegex\Internal\Subjectable;
-use TRegx\CleanRegex\Replace\NonReplaced\ReplaceSubstitute;
 use TRegx\SafeRegex\preg;
 
 class ReplacePatternCallbackInvoker
@@ -16,10 +15,10 @@ class ReplacePatternCallbackInvoker
     private $subject;
     /** @var int */
     private $limit;
-    /** @var ReplaceSubstitute */
+    /** @var SubjectRs */
     private $substitute;
 
-    public function __construct(Pattern $pattern, Subjectable $subject, int $limit, ReplaceSubstitute $substitute)
+    public function __construct(Pattern $pattern, Subjectable $subject, int $limit, SubjectRs $substitute)
     {
         $this->pattern = $pattern;
         $this->subject = $subject;
@@ -36,7 +35,7 @@ class ReplacePatternCallbackInvoker
         return $result;
     }
 
-    public function pregReplaceCallback(callable $callback, ?int &$replaced, ReplaceCallbackArgumentStrategy $strategy): string
+    private function pregReplaceCallback(callable $callback, ?int &$replaced, ReplaceCallbackArgumentStrategy $strategy): string
     {
         return preg::replace_callback($this->pattern->pattern,
             $this->getObjectCallback($callback, $strategy),
@@ -48,7 +47,7 @@ class ReplacePatternCallbackInvoker
     private function getObjectCallback(callable $callback, ReplaceCallbackArgumentStrategy $strategy): callable
     {
         if ($this->limit === 0) {
-            return function () {
+            return static function () {
             };
         }
         return $this->createObjectCallback($callback, $strategy);
@@ -60,9 +59,9 @@ class ReplacePatternCallbackInvoker
         return $object->getCallback();
     }
 
-    private function analyzePattern(): IRawMatchesOffset
+    private function analyzePattern(): RawMatchesOffset
     {
-        preg::match_all($this->pattern->pattern, $this->subject->getSubject(), $matches, PREG_OFFSET_CAPTURE);
+        preg::match_all($this->pattern->pattern, $this->subject->getSubject(), $matches, \PREG_OFFSET_CAPTURE);
         return new RawMatchesOffset($matches);
     }
 }

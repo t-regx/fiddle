@@ -2,41 +2,56 @@
 namespace TRegx\CleanRegex\Match;
 
 use ArrayIterator;
-use Countable;
 use EmptyIterator;
 use Iterator;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
-use TRegx\CleanRegex\Internal\Exception\Messages\NoFirstElementFluentMessage;
+use TRegx\CleanRegex\Internal\Exception\Messages\FirstFluentMessage;
+use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstMatchAsArrayMessage;
 use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstMatchIntMessage;
 use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstMatchMessage;
-use TRegx\CleanRegex\Internal\Factory\NotMatchedFluentOptionalWorker;
+use TRegx\CleanRegex\Internal\Factory\FluentOptionalWorker;
 use TRegx\CleanRegex\Internal\Factory\NotMatchedOptionalWorker;
 use TRegx\CleanRegex\Internal\GroupNameValidator;
 use TRegx\CleanRegex\Internal\Match\Base\Base;
 use TRegx\CleanRegex\Internal\Match\Base\FilteredBaseDecorator;
+use TRegx\CleanRegex\Internal\Match\FindFirst\EmptyOptional;
+use TRegx\CleanRegex\Internal\Match\FindFirst\OptionalImpl;
 use TRegx\CleanRegex\Internal\Match\FlatMapper;
+use TRegx\CleanRegex\Internal\Match\MatchAll\LazyMatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\MatchFirst;
+use TRegx\CleanRegex\Internal\Match\MatchOnly;
 use TRegx\CleanRegex\Internal\Match\Predicate;
+use TRegx\CleanRegex\Internal\Match\Stream\AsArrayStream;
 use TRegx\CleanRegex\Internal\Match\Stream\BaseStream;
 use TRegx\CleanRegex\Internal\Match\Stream\IntStream;
 use TRegx\CleanRegex\Internal\Match\Stream\MatchStream;
-use TRegx\CleanRegex\Internal\Model\MatchObjectFactory;
+use TRegx\CleanRegex\Internal\MatchPatternHelpers;
+use TRegx\CleanRegex\Internal\Model\DetailObjectFactory;
+use TRegx\CleanRegex\Internal\Model\GroupPolyfillDecorator;
+use TRegx\CleanRegex\Internal\Model\LazyRawWithGroups;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
 use TRegx\CleanRegex\Internal\PatternLimit;
-use TRegx\CleanRegex\Match\Details\Match;
+use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Match\Details\NotMatched;
-use TRegx\CleanRegex\Match\FindFirst\MatchedOptional;
-use TRegx\CleanRegex\Match\FindFirst\NotMatchedOptional;
-use TRegx\CleanRegex\Match\FindFirst\Optional;
 use TRegx\CleanRegex\Match\Offset\MatchOffsetLimit;
 
-abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLimit, Countable
+abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLimit
 {
+    use MatchPatternHelpers;
+
     /** @var Base */
     protected $base;
 
     public function __construct(Base $base)
     {
         $this->base = $base;
+    }
+
+    abstract public function test(): bool;
+
+    public function fails(): bool
+    {
+        return !$this->test();
     }
 
     public function all(): array
@@ -52,6 +67,24 @@ abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLim
     public function first(callable $consumer = null)
     {
         return (new MatchFirst($this->base))->invoke($consumer);
+    }
+
+    public function findFirst(callable $consumer): Optional
+    {
+        $match = $this->base->matchOffset();
+        if ($match->matched()) {
+            return new OptionalImpl($consumer($this->findFirstDetail($match)));
+        }
+        return new EmptyOptional(
+            new NotMatchedOptionalWorker(new FirstMatchMessage(), $this->base, new NotMatched(new LazyRawWithGroups($this->base), $this->base)),
+            SubjectNotMatchedException::class);
+    }
+
+    private function findFirstDetail(RawMatchOffset $match): Detail
+    {
+        $allFactory = new LazyMatchAllFactory($this->base);
+        return (new DetailObjectFactory($this->base, 1, $this->base->getUserData()))
+            ->create(0, new GroupPolyfillDecorator($match, $allFactory, 0), $allFactory);
     }
 
     public function only(int $limit): array
@@ -82,25 +115,6 @@ abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLim
     }
 
     /**
-     * @param callable $consumer
-     * @return Optional
-     */
-    public function findFirst(callable $consumer): Optional
-    {
-        $matches = $this->base->matchAllOffsets();
-        if ($matches->matched()) {
-            $result = $consumer($matches->getFirstMatchObject(new MatchObjectFactory($this->base, 1, $this->base->getUserData())));
-            return new MatchedOptional($result);
-        }
-        return new NotMatchedOptional(
-            new NotMatchedOptionalWorker(
-                new FirstMatchMessage(),
-                $this->base,
-                new NotMatched($matches, $this->base))
-        );
-    }
-
-    /**
      * @param string|int $nameOrIndex
      * @return GroupLimit
      */
@@ -118,7 +132,7 @@ abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLim
 
     abstract public function count(): int;
 
-    public function iterator(): Iterator
+    public function getIterator(): Iterator
     {
         $objects = $this->getMatchObjects();
         if (empty($objects)) {
@@ -137,7 +151,7 @@ abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLim
         $stream = new BaseStream($this->base);
         return new FluentMatchPattern(
             new MatchStream($stream, $this->base, $this->base->getUserData(), $stream),
-            new NotMatchedFluentOptionalWorker(new NoFirstElementFluentMessage(), $this->base->getSubject())
+            new FluentOptionalWorker(new FirstFluentMessage(), $this->base->getSubject())
         );
     }
 
@@ -145,7 +159,15 @@ abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLim
     {
         return new FluentMatchPattern(
             new IntStream(new BaseStream($this->base)),
-            new NotMatchedFluentOptionalWorker(new FirstMatchIntMessage(), $this->base->getSubject())
+            new FluentOptionalWorker(new FirstMatchIntMessage(), $this->base->getSubject())
+        );
+    }
+
+    public function asArray(): FluentMatchPattern
+    {
+        return new FluentMatchPattern(
+            new AsArrayStream(new BaseStream($this->base), $this->base),
+            new FluentOptionalWorker(new FirstMatchAsArrayMessage(), $this->base->getSubject())
         );
     }
 
@@ -159,11 +181,11 @@ abstract class AbstractMatchPattern implements MatchPatternInterface, PatternLim
     }
 
     /**
-     * @return Match[]
+     * @return Detail[]
      */
     protected function getMatchObjects(): array
     {
-        $factory = new MatchObjectFactory($this->base, -1, $this->base->getUserData());
-        return $this->base->matchAllOffsets()->getMatchObjects($factory);
+        $factory = new DetailObjectFactory($this->base, -1, $this->base->getUserData());
+        return $this->base->matchAllOffsets()->getDetailObjects($factory);
     }
 }

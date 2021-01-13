@@ -1,14 +1,11 @@
 <?php
 namespace TRegx\CleanRegex\Replace;
 
-use TRegx\CleanRegex\Exception\NotReplacedException;
-use TRegx\CleanRegex\Match\FindFirst\Optional;
-
-interface ReplacePattern extends SpecificReplacePattern, Optional
+interface ReplacePattern extends CompositeReplacePattern
 {
-    public function orThrow(string $exceptionClassName = NotReplacedException::class): SpecificReplacePattern;
+    public function otherwiseThrowing(string $exceptionClassName = null): CompositeReplacePattern;
 
-    public function orReturn($substitute): SpecificReplacePattern;
+    public function otherwiseReturning($substitute): CompositeReplacePattern;
 
-    public function orElse(callable $substituteProducer): SpecificReplacePattern;
+    public function otherwise(callable $substituteProducer): CompositeReplacePattern;
 }

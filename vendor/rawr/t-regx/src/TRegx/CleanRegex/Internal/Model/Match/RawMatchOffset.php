@@ -7,7 +7,7 @@ use function array_keys;
 use function array_map;
 use function is_array;
 
-class RawMatchOffset implements IRawMatchOffset, IRawMatchGroupable
+class RawMatchOffset implements IRawMatchOffset
 {
     /** @var array[] */
     private $match;
@@ -84,7 +84,7 @@ class RawMatchOffset implements IRawMatchOffset, IRawMatchGroupable
      */
     public function getGroupsTexts(): array
     {
-        return array_map(function ($match) {
+        return array_map(static function ($match) {
             if ($match === null) {
                 return null;
             }
@@ -109,8 +109,7 @@ class RawMatchOffset implements IRawMatchOffset, IRawMatchGroupable
      */
     public function getGroupsOffsets(): array
     {
-        // TODO write a test for $match==null
-        return array_map(function (array $match) {
+        return array_map(static function (array $match) {
             [$text, $offset] = $match;
             return $offset;
         }, $this->match);

@@ -1,14 +1,14 @@
 <?php
 namespace TRegx\CleanRegex;
 
+use TRegx\CleanRegex\ForArray\ForArrayPattern;
 use TRegx\CleanRegex\ForArray\ForArrayPatternImpl;
 use TRegx\CleanRegex\Internal\InternalPattern;
-use TRegx\CleanRegex\Internal\Subject;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\DefaultStrategy;
+use TRegx\CleanRegex\Internal\ValidPattern;
 use TRegx\CleanRegex\Match\MatchPattern;
 use TRegx\CleanRegex\Remove\RemoveLimit;
 use TRegx\CleanRegex\Remove\RemovePattern;
-use TRegx\CleanRegex\Replace\NonReplaced\DefaultStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\ReplacePatternFactory;
 use TRegx\CleanRegex\Replace\ReplaceLimit;
 use TRegx\CleanRegex\Replace\ReplaceLimitImpl;
 use TRegx\CleanRegex\Replace\ReplacePatternImpl;
@@ -44,11 +44,7 @@ class PatternImpl implements PatternInterface
     {
         return new ReplaceLimitImpl(function (int $limit) use ($subject) {
             return new ReplacePatternImpl(
-                new SpecificReplacePatternImpl($this->pattern, $subject, $limit, new DefaultStrategy()),
-                $this->pattern,
-                $subject,
-                $limit,
-                new ReplacePatternFactory());
+                new SpecificReplacePatternImpl($this->pattern, $subject, $limit, new DefaultStrategy()), $this->pattern, $subject, $limit);
         });
     }
 
@@ -59,27 +55,27 @@ class PatternImpl implements PatternInterface
         });
     }
 
-    public function forArray(array $haystack): ForArrayPatternImpl
+    public function forArray(array $haystack): ForArrayPattern
     {
         return new ForArrayPatternImpl($this->pattern, $haystack, false);
     }
 
     public function split(string $subject): array
     {
-        return (new SplitPattern($this->pattern, $subject))->split();
+        return preg::split($this->pattern->pattern, $subject, -1, \PREG_SPLIT_DELIM_CAPTURE);
     }
 
     public function count(string $subject): int
     {
-        return (new CountPattern($this->pattern, new Subject($subject)))->count();
+        return preg::match_all($this->pattern->pattern, $subject);
     }
 
     public function valid(): bool
     {
-        return (new ValidPattern($this->pattern->pattern))->isValid();
+        return ValidPattern::isValid($this->pattern->pattern);
     }
 
-    public function delimiter(): string
+    public function delimited(): string
     {
         return $this->pattern->pattern;
     }

@@ -2,7 +2,7 @@
 namespace TRegx\SafeRegex\Exception\Factory;
 
 use TRegx\SafeRegex\Constants\PregConstants;
-use TRegx\SafeRegex\Exception\BacktrackLimitPregException;
+use TRegx\SafeRegex\Exception\CatastrophicBacktrackingPregException;
 use TRegx\SafeRegex\Exception\JitStackLimitPregException;
 use TRegx\SafeRegex\Exception\RecursionLimitPregException;
 use TRegx\SafeRegex\Exception\RuntimePregException;
@@ -15,13 +15,16 @@ class RuntimePregExceptionFactory
     private $pregConstants;
     /** @var string */
     private $methodName;
+    /** @var string|array */
+    private $pattern;
     /** @var int */
     private $errorCode;
 
-    public function __construct(string $methodName, int $errorCode)
+    public function __construct(string $methodName, $pattern, int $errorCode)
     {
         $this->pregConstants = new PregConstants();
         $this->methodName = $methodName;
+        $this->pattern = $pattern;
         $this->errorCode = $errorCode;
     }
 
@@ -38,17 +41,17 @@ class RuntimePregExceptionFactory
     private function instantiateException(string $errorName): RuntimePregException
     {
         $class = $this->className();
-        return new $class($this->methodName, $this->getExceptionMessage($errorName), $this->errorCode, $errorName);
+        return new $class($this->getExceptionMessage($errorName), $this->pattern, $this->methodName, $this->errorCode, $errorName);
     }
 
     private function className(): string
     {
         $classes = [
-            PREG_BAD_UTF8_ERROR        => SubjectEncodingPregException::class,
-            PREG_BAD_UTF8_OFFSET_ERROR => Utf8OffsetPregException::class,
-            PREG_BACKTRACK_LIMIT_ERROR => BacktrackLimitPregException::class,
-            PREG_RECURSION_LIMIT_ERROR => RecursionLimitPregException::class,
-            PREG_JIT_STACKLIMIT_ERROR  => JitStackLimitPregException::class
+            \PREG_BAD_UTF8_ERROR        => SubjectEncodingPregException::class,
+            \PREG_BAD_UTF8_OFFSET_ERROR => Utf8OffsetPregException::class,
+            \PREG_BACKTRACK_LIMIT_ERROR => CatastrophicBacktrackingPregException::class,
+            \PREG_RECURSION_LIMIT_ERROR => RecursionLimitPregException::class,
+            \PREG_JIT_STACKLIMIT_ERROR  => JitStackLimitPregException::class
         ];
         return $classes[$this->errorCode] ?? RuntimePregException::class;
     }

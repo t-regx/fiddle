@@ -4,7 +4,7 @@
   "description": "The most advanced PHP regexp library. Clean, descriptive wrapper functions enhancing PCRE extension methods.",
   "license": "MIT",
   "scripts": {
-    "test": "cd vendor/phpunit && phpunit ../../test",
+    "test": "cd vendor/phpunit && phpunit ../../test --no-coverage",
     "fqn": "cd vendor/bin && fqn-check ../../src"
   },
   "keywords": [
@@ -41,7 +41,12 @@
       "test/"
     ],
     "psr-4": {
-      "Test\\": "test/"
+      "Test\\": "test/",
+      "Test\\Compatibility\\": "test/Compatibility/",
+      "Test\\Feature\\": "test/Feature/",
+      "Test\\Functional\\": "test/Functional/",
+      "Test\\Integration\\": "test/Integration/",
+      "Test\\Unit\\": "test/Unit/"
     }
   },
   "require": {
@@ -51,8 +56,8 @@
   "require-dev": {
     "phpunit/phpunit": "^9.0 || ^8.0 || ^7.5",
     "php-coveralls/php-coveralls": "^2.0",
-    "rawr/cross-data-providers": "^2.1",
-    "kelunik/fqn-check": "^0.1.3"
+    "rawr/cross-data-providers": "^2.3.0",
+    "rawr/fqn-check": "^1.2.0"
   },
   "archive": {
     "exclude": [

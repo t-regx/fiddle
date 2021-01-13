@@ -2,8 +2,9 @@
 namespace TRegx\CleanRegex\Internal\Prepared\Parser;
 
 use InvalidArgumentException;
-use TRegx\CleanRegex\Internal\Prepared\QuotableFactory;
 use TRegx\CleanRegex\Internal\Prepared\Quoteable\CompositeQuoteable;
+use TRegx\CleanRegex\Internal\Prepared\Quoteable\Factory\NoAlterationDecorator;
+use TRegx\CleanRegex\Internal\Prepared\Quoteable\Factory\QuotableFactory;
 use TRegx\CleanRegex\Internal\Prepared\Quoteable\Quoteable;
 use TRegx\CleanRegex\Internal\Prepared\Quoteable\RawQuoteable;
 use TRegx\CleanRegex\Internal\Type;
@@ -21,15 +22,22 @@ class PreparedParser implements Parser
     public function parse(string $delimiter, QuotableFactory $quotableFactory): Quoteable
     {
         $this->validateEmptyInput();
-        return new CompositeQuoteable(\array_map(function ($quoteable) use ($quotableFactory) {
-            return $this->mapToQuoteable($quoteable, $quotableFactory);
+        $factory = new NoAlterationDecorator($quotableFactory);
+        return new CompositeQuoteable(\array_map(static function ($quoteable) use ($factory) {
+            return self::mapToQuoteable($quoteable, $factory);
         }, $this->input));
     }
 
-    private function mapToQuoteable($quoteable, QuotableFactory $quotableFactory): Quoteable
+    private static function mapToQuoteable($quoteable, QuotableFactory $quotableFactory): Quoteable
     {
         if (\is_array($quoteable)) {
-            return new CompositeQuoteable(\array_map([$quotableFactory, 'quotable'], $quoteable));
+            if (\count($quoteable) === 1) {
+                return new CompositeQuoteable(\array_map([$quotableFactory, 'quotable'], $quoteable));
+            }
+            if (empty($quoteable)) {
+                throw new InvalidArgumentException("Method prepare() doesn't support alteration; bound value is required");
+            }
+            throw new InvalidArgumentException("Method prepare() doesn't support alteration; only one bound value allowed");
         }
         if (\is_string($quoteable)) {
             return new RawQuoteable($quoteable);
@@ -40,12 +48,7 @@ class PreparedParser implements Parser
 
     public function getDelimiterable(): string
     {
-        return \implode($this->getDelimiterableStrings());
-    }
-
-    private function getDelimiterableStrings(): array
-    {
-        return \array_filter($this->input, '\is_string');
+        return \implode(\array_filter($this->input, '\is_string'));
     }
 
     private function validateEmptyInput(): void

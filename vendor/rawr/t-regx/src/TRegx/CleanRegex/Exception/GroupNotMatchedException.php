@@ -2,8 +2,10 @@
 namespace TRegx\CleanRegex\Exception;
 
 use TRegx\CleanRegex\Internal\Exception\Messages\Group\FirstGroupMessage;
+use TRegx\CleanRegex\Internal\Exception\Messages\Group\MethodGetGroupMessage;
 use TRegx\CleanRegex\Internal\Exception\Messages\Group\MethodGroupMessage;
 use TRegx\CleanRegex\Internal\Exception\Messages\Group\ReplacementWithUnmatchedGroupMessage;
+use TRegx\CleanRegex\Internal\Exception\Messages\NotMatchedMessage;
 use TRegx\CleanRegex\Internal\Subjectable;
 
 class GroupNotMatchedException extends PatternException
@@ -21,21 +23,28 @@ class GroupNotMatchedException extends PatternException
         $this->group = $group;
     }
 
-    public static function forFirst(Subjectable $subject, $group): GroupNotMatchedException
+    private static function exception(NotMatchedMessage $message, Subjectable $subject, $group): self
     {
-        $message = new FirstGroupMessage($group);
         return new GroupNotMatchedException($message->getMessage(), $subject->getSubject(), $group);
     }
 
-    public static function forMethod(Subjectable $subject, $group, string $method): GroupNotMatchedException
+    public static function forFirst(Subjectable $subject, $group): self
     {
-        $message = new MethodGroupMessage($method, $group);
-        return new GroupNotMatchedException($message->getMessage(), $subject->getSubject(), $group);
+        return self::exception(new FirstGroupMessage($group), $subject, $group);
     }
 
-    public static function forReplacement(Subjectable $subject, $group): GroupNotMatchedException
+    public static function forMethod(Subjectable $subject, $group, string $method): self
     {
-        $message = new ReplacementWithUnmatchedGroupMessage($group);
-        return new GroupNotMatchedException($message->getMessage(), $subject->getSubject(), $group);
+        return self::exception(new MethodGroupMessage($method, $group), $subject, $group);
+    }
+
+    public static function forReplacement(Subjectable $subject, $group): self
+    {
+        return self::exception(new ReplacementWithUnmatchedGroupMessage($group), $subject, $group);
+    }
+
+    public static function forGet(Subjectable $subject, $group): self
+    {
+        return self::exception(new MethodGetGroupMessage($group), $subject, $group);
     }
 }

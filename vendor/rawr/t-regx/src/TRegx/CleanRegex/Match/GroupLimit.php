@@ -4,8 +4,8 @@ namespace TRegx\CleanRegex\Match;
 use ArrayIterator;
 use InvalidArgumentException;
 use Iterator;
-use TRegx\CleanRegex\Internal\Exception\Messages\NoFirstElementFluentMessage;
-use TRegx\CleanRegex\Internal\Factory\NotMatchedFluentOptionalWorker;
+use TRegx\CleanRegex\Internal\Exception\Messages\FirstFluentMessage;
+use TRegx\CleanRegex\Internal\Factory\FluentOptionalWorker;
 use TRegx\CleanRegex\Internal\GroupLimit\GroupLimitAll;
 use TRegx\CleanRegex\Internal\GroupLimit\GroupLimitFindFirst;
 use TRegx\CleanRegex\Internal\GroupLimit\GroupLimitFirst;
@@ -21,11 +21,10 @@ use TRegx\CleanRegex\Internal\Match\Stream\Stream;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
 use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\PatternLimit;
-use TRegx\CleanRegex\Match\Details\Group\MatchGroup;
-use TRegx\CleanRegex\Match\FindFirst\Optional;
+use TRegx\CleanRegex\Match\Details\Group\DetailGroup;
 use TRegx\CleanRegex\Match\Offset\OffsetLimit;
 
-class GroupLimit implements PatternLimit
+class GroupLimit implements PatternLimit, \IteratorAggregate
 {
     /** @var GroupLimitAll */
     private $allFactory;
@@ -64,7 +63,7 @@ class GroupLimit implements PatternLimit
         return $consumer($this->matchGroupDetails($first));
     }
 
-    private function matchGroupDetails(RawMatchOffset $first): MatchGroup
+    private function matchGroupDetails(RawMatchOffset $first): DetailGroup
     {
         $facade = new GroupFacade($first, $this->base, $this->nameOrIndex, new MatchGroupFactoryStrategy(), new LazyMatchAllFactory($this->base));
         return $facade->createGroup($first);
@@ -96,9 +95,9 @@ class GroupLimit implements PatternLimit
         return \array_slice($matches->getGroupTexts($this->nameOrIndex), 0, $limit);
     }
 
-    public function iterator(): Iterator
+    public function getIterator(): Iterator
     {
-        return new ArrayIterator($this->all());
+        return new ArrayIterator($this->stream()->all());
     }
 
     /**
@@ -119,6 +118,23 @@ class GroupLimit implements PatternLimit
         return (new FlatMapper($this->stream()->all(), $mapper))->get();
     }
 
+    /**
+     * @param callable $consumer
+     * @return string[]
+     */
+    public function filter(callable $consumer): array
+    {
+        /**
+         * I use foreach to eliminate the overhead of PHP function call.
+         * I use array_filter(), because we have to call user function no matter what,
+         */
+        $result = [];
+        foreach (\array_filter($this->stream()->all(), $consumer) as $group) {
+            $result[] = $group->text();
+        }
+        return $result;
+    }
+
     public function forEach(callable $consumer): void
     {
         foreach ($this->stream()->all() as $group) {
@@ -135,7 +151,7 @@ class GroupLimit implements PatternLimit
     {
         return new FluentMatchPattern(
             $this->stream(),
-            new NotMatchedFluentOptionalWorker(new NoFirstElementFluentMessage(), $this->base->getSubject()));
+            new FluentOptionalWorker(new FirstFluentMessage(), $this->base->getSubject()));
     }
 
     private function stream(): Stream

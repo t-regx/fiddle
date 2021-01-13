@@ -1,13 +1,14 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Stream;
 
+use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFacade;
 use TRegx\CleanRegex\Internal\Match\Details\Group\MatchGroupFactoryStrategy;
 use TRegx\CleanRegex\Internal\Match\MatchAll\EagerMatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Model\IRawWithGroups;
 use TRegx\CleanRegex\Internal\Subjectable;
-use TRegx\CleanRegex\Match\Details\Group\MatchGroup;
+use TRegx\CleanRegex\Match\Details\Group\DetailGroup;
 
 class MatchGroupStream implements Stream
 {
@@ -29,7 +30,7 @@ class MatchGroupStream implements Stream
     }
 
     /**
-     * @return MatchGroup[]
+     * @return DetailGroup[]
      */
     public function all(): array
     {
@@ -37,7 +38,7 @@ class MatchGroupStream implements Stream
         return $this->facade($matches, new EagerMatchAllFactory($matches))->createGroups($matches);
     }
 
-    public function first(): MatchGroup
+    public function first(): DetailGroup
     {
         $match = $this->stream->first();
         return $this->facade($match, $this->allFactory)->createGroup($match);
@@ -45,7 +46,10 @@ class MatchGroupStream implements Stream
 
     private function facade(IRawWithGroups $matches, MatchAllFactory $allFactory): GroupFacade
     {
-        return new GroupFacade($matches, $this->subjectable, $this->nameOrIndex, new MatchGroupFactoryStrategy(), $allFactory);
+        if ($matches->hasGroup($this->nameOrIndex)) {
+            return new GroupFacade($matches, $this->subjectable, $this->nameOrIndex, new MatchGroupFactoryStrategy(), $allFactory);
+        }
+        throw new NonexistentGroupException($this->nameOrIndex);
     }
 
     public function firstKey(): int

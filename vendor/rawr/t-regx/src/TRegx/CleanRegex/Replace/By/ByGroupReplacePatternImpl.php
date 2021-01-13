@@ -2,20 +2,26 @@
 namespace TRegx\CleanRegex\Replace\By;
 
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
-use TRegx\CleanRegex\Exception\InternalCleanRegexException;
 use TRegx\CleanRegex\Exception\MissingReplacementKeyException;
 use TRegx\CleanRegex\Internal\Exception\Messages\Group\ReplacementWithUnmatchedGroupMessage;
+use TRegx\CleanRegex\Internal\Replace\By\GroupFallbackReplacer;
+use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\DictionaryMapper;
+use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\GroupMapper;
+use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\IdentityMapper;
+use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\MapGroupMapperDecorator;
+use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\SubstituteFallbackMapper;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ComputedMatchStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ConstantReturnStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\DefaultStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\LazyMessageThrowStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\MatchRs;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ThrowStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\PerformanceEmptyGroupReplace;
+use TRegx\CleanRegex\Internal\Replace\Wrapper;
+use TRegx\CleanRegex\Internal\Replace\WrappingMapper;
+use TRegx\CleanRegex\Internal\Replace\WrappingMatchRs;
 use TRegx\CleanRegex\Replace\Callback\MatchGroupStrategy;
 use TRegx\CleanRegex\Replace\Callback\ReplacePatternCallbackInvoker;
-use TRegx\CleanRegex\Replace\GroupMapper\DictionaryMapper;
-use TRegx\CleanRegex\Replace\GroupMapper\IdentityMapper;
-use TRegx\CleanRegex\Replace\GroupMapper\StrategyFallbackAdapter;
-use TRegx\CleanRegex\Replace\NonReplaced\ComputedSubjectStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\ConstantResultStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\CustomThrowStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\DefaultStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\LazyMessageThrowStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\ReplaceSubstitute;
 
 class ByGroupReplacePatternImpl implements ByGroupReplacePattern
 {
@@ -29,73 +35,88 @@ class ByGroupReplacePatternImpl implements ByGroupReplacePattern
     private $performanceReplace;
     /** @var ReplacePatternCallbackInvoker */
     private $replaceCallbackInvoker;
+    /** @var Wrapper */
+    private $middlewareMapper;
 
     public function __construct(GroupFallbackReplacer $fallbackReplacer,
                                 PerformanceEmptyGroupReplace $performanceReplace,
                                 ReplacePatternCallbackInvoker $replaceCallbackInvoker,
                                 $nameOrIndex,
-                                string $subject)
+                                string $subject,
+                                Wrapper $middlewareMapper)
     {
         $this->fallbackReplacer = $fallbackReplacer;
         $this->nameOrIndex = $nameOrIndex;
         $this->subject = $subject;
         $this->performanceReplace = $performanceReplace;
         $this->replaceCallbackInvoker = $replaceCallbackInvoker;
+        $this->middlewareMapper = $middlewareMapper;
     }
 
-    public function map(array $map): OptionalStrategySelector
+    public function map(array $map): UnmatchedGroupStrategy
     {
-        return new OptionalStrategySelectorImpl(
+        return $this->performMap(new DictionaryMapper($map));
+    }
+
+    public function mapAndCallback(array $map, callable $mapper): UnmatchedGroupStrategy
+    {
+        return $this->performMap(new MapGroupMapperDecorator(new DictionaryMapper($map), $mapper));
+    }
+
+    private function performMap(GroupMapper $mapper): UnmatchedGroupStrategy
+    {
+        return new UnmatchedGroupStrategy(
             $this->fallbackReplacer,
             $this->nameOrIndex,
-            new StrategyFallbackAdapter(
-                new DictionaryMapper($map),
-                new LazyMessageThrowStrategy(MissingReplacementKeyException::class),
-                $this->subject)
+            new SubstituteFallbackMapper(new WrappingMapper($mapper, $this->middlewareMapper),
+                new LazyMessageThrowStrategy(MissingReplacementKeyException::class), $this->subject),
+            $this->middlewareMapper
         );
     }
 
-    public function mapIfExists(array $map): OptionalStrategySelector
+    public function mapIfExists(array $map): UnmatchedGroupStrategy
     {
-        return new OptionalStrategySelectorImpl($this->fallbackReplacer, $this->nameOrIndex, new DictionaryMapper($map));
+        return new UnmatchedGroupStrategy(
+            $this->fallbackReplacer,
+            $this->nameOrIndex,
+            new WrappingMapper(new DictionaryMapper($map), $this->middlewareMapper),
+            $this->middlewareMapper);
     }
 
-    public function orThrow(string $exceptionClassName = GroupNotMatchedException::class): string
+    public function orElseThrow(string $exceptionClassName = GroupNotMatchedException::class): string
     {
-        return $this->replaceGroupOptional(new CustomThrowStrategy($exceptionClassName, new ReplacementWithUnmatchedGroupMessage($this->nameOrIndex)));
+        return $this->replaceGroupOptional(new ThrowStrategy($exceptionClassName, new ReplacementWithUnmatchedGroupMessage($this->nameOrIndex)));
     }
 
-    public function orReturn($substitute): string
+    public function orElseWith(string $substitute): string
     {
-        return $this->replaceGroupOptional(new ConstantResultStrategy($substitute));
+        return $this->replaceGroupOptional(new ConstantReturnStrategy($substitute));
     }
 
-    public function orIgnore(): string
+    public function orElseIgnore(): string
     {
         return $this->replaceGroupOptional(new DefaultStrategy());
     }
 
-    public function orEmpty(): string
+    public function orElseEmpty(): string
     {
         if (\is_int($this->nameOrIndex)) {
             return $this->performanceReplace->replaceWithGroupOrEmpty($this->nameOrIndex);
         }
-        return $this->replaceGroupOptional(new ConstantResultStrategy(''));
+        return $this->replaceGroupOptional(new ConstantReturnStrategy(''));
     }
 
-    public function orElse(callable $substituteProducer): string
+    public function orElseCalling(callable $replacementProducer): string
     {
-        return $this->replaceGroupOptional(new ComputedSubjectStrategy($substituteProducer));
+        return $this->replaceGroupOptional(new ComputedMatchStrategy($replacementProducer, "orElseCalling"));
     }
 
-    public function replaceGroupOptional(ReplaceSubstitute $substitute): string
+    private function replaceGroupOptional(MatchRs $substitute): string
     {
-        if ($this->nameOrIndex === 0) {
-            // @codeCoverageIgnoreStart
-            throw new InternalCleanRegexException();
-            // @codeCoverageIgnoreEnd
-        }
-        return $this->fallbackReplacer->replaceOrFallback($this->nameOrIndex, new IdentityMapper(), $substitute);
+        return $this->fallbackReplacer->replaceOrFallback($this->nameOrIndex,
+            new WrappingMapper(new IdentityMapper(), $this->middlewareMapper),
+            new WrappingMatchRs($substitute, $this->middlewareMapper)
+        );
     }
 
     public function callback(callable $callback): string

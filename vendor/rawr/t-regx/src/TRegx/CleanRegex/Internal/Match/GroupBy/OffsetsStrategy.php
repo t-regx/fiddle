@@ -3,14 +3,14 @@ namespace TRegx\CleanRegex\Internal\Match\GroupBy;
 
 use TRegx\CleanRegex\Internal\ByteOffset;
 use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
-use TRegx\CleanRegex\Internal\Model\Matches\IRawMatchesOffset;
+use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\Subjectable;
 
 class OffsetsStrategy implements Strategy
 {
     /** @var Subjectable */
     private $subjectable;
-    /** @var boolean */
+    /** @var bool */
     private $characterOffsets;
 
     public function __construct(?Subjectable $subjectable, bool $characterOffsets)
@@ -19,7 +19,7 @@ class OffsetsStrategy implements Strategy
         $this->characterOffsets = $characterOffsets;
     }
 
-    function transform(array $groups, IRawMatchesOffset $matches): array
+    public function transform(array $groups, RawMatchesOffset $matches): array
     {
         foreach ($groups as &$group) {
             $group = \array_map(function (IRawMatchOffset $match) {

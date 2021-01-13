@@ -4,12 +4,11 @@ namespace TRegx\CleanRegex\Replace;
 use TRegx\CleanRegex\Exception\NotReplacedException;
 use TRegx\CleanRegex\Internal\Exception\Messages\NonReplacedMessage;
 use TRegx\CleanRegex\Internal\InternalPattern;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ConstantReturnStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\OtherwiseStrategy;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\SubjectRs;
+use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ThrowStrategy;
 use TRegx\CleanRegex\Replace\By\ByReplacePattern;
-use TRegx\CleanRegex\Replace\NonReplaced\ComputedSubjectStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\ConstantResultStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\CustomThrowStrategy;
-use TRegx\CleanRegex\Replace\NonReplaced\ReplacePatternFactory;
-use TRegx\CleanRegex\Replace\NonReplaced\ReplaceSubstitute;
 
 class ReplacePatternImpl implements ReplacePattern
 {
@@ -21,20 +20,13 @@ class ReplacePatternImpl implements ReplacePattern
     private $subject;
     /** @var int */
     private $limit;
-    /** @var ReplacePatternFactory */
-    private $replacePatternFactory;
 
-    public function __construct(SpecificReplacePattern $replacePattern,
-                                InternalPattern $pattern,
-                                string $subject,
-                                int $limit,
-                                ReplacePatternFactory $replacePatternFactory)
+    public function __construct(SpecificReplacePattern $replacePattern, InternalPattern $pattern, string $subject, int $limit)
     {
         $this->replacePattern = $replacePattern;
         $this->pattern = $pattern;
         $this->subject = $subject;
         $this->limit = $limit;
-        $this->replacePatternFactory = $replacePatternFactory;
     }
 
     public function with(string $replacement): string
@@ -57,23 +49,28 @@ class ReplacePatternImpl implements ReplacePattern
         return $this->replacePattern->by();
     }
 
-    public function orThrow(string $exceptionClassName = NotReplacedException::class): SpecificReplacePattern
+    public function otherwiseThrowing(string $exceptionClassName = null): CompositeReplacePattern
     {
-        return $this->replacePattern(new CustomThrowStrategy($exceptionClassName, new NonReplacedMessage()));
+        return $this->replacePattern(new ThrowStrategy($exceptionClassName ?? NotReplacedException::class, new NonReplacedMessage()));
     }
 
-    public function orReturn($substitute): SpecificReplacePattern
+    public function otherwiseReturning($substitute): CompositeReplacePattern
     {
-        return $this->replacePattern(new ConstantResultStrategy($substitute));
+        return $this->replacePattern(new ConstantReturnStrategy($substitute));
     }
 
-    public function orElse(callable $substituteProducer): SpecificReplacePattern
+    public function otherwise(callable $substituteProducer): CompositeReplacePattern
     {
-        return $this->replacePattern(new ComputedSubjectStrategy($substituteProducer));
+        return $this->replacePattern(new OtherwiseStrategy($substituteProducer));
     }
 
-    private function replacePattern(ReplaceSubstitute $substitute): SpecificReplacePattern
+    private function replacePattern(SubjectRs $substitute): CompositeReplacePattern
     {
-        return $this->replacePatternFactory->create($this->pattern, $this->subject, $this->limit, $substitute);
+        return new SpecificReplacePatternImpl($this->pattern, $this->subject, $this->limit, $substitute);
+    }
+
+    public function focus($nameOrIndex): FocusReplacePattern
+    {
+        return new FocusReplacePattern($this->replacePattern, $this->pattern, $this->subject, $this->limit, $nameOrIndex);
     }
 }

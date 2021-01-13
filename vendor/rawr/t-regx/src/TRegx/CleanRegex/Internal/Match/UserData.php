@@ -1,26 +1,26 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match;
 
-use TRegx\CleanRegex\Match\Details\Match;
+use TRegx\CleanRegex\Match\Details\Detail;
 
 class UserData
 {
     /** @var mixed[] */
     private $values = [];
 
-    public function set(Match $match, $value): void
+    public function set(Detail $detail, $value): void
     {
-        $this->values[$this->getKey($match)] = $value;
+        $this->values[$this->getKey($detail)] = $value;
     }
 
-    public function get(Match $match)
+    public function get(Detail $detail)
     {
-        $key = $this->getKey($match);
+        $key = $this->getKey($detail);
         return $this->values[$key] ?? null;
     }
 
-    private function getKey(Match $match): int
+    private function getKey(Detail $detail): int
     {
-        return $match->byteOffset();
+        return $detail->byteOffset();
     }
 }

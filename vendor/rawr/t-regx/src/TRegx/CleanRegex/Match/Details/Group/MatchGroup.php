@@ -1,37 +1,12 @@
 <?php
 namespace TRegx\CleanRegex\Match\Details\Group;
 
-use TRegx\CleanRegex\Exception\GroupNotMatchedException;
-use TRegx\CleanRegex\Match\FindFirst\Optional;
-
-interface MatchGroup extends Optional
+/**
+ * In PHP 8, "match" will become a keyword and thus will be unfit
+ * for class names and namespaces.
+ *
+ * @deprecated Use {@see \TRegx\CleanRegex\Match\Details\Group\DetailGroup} instead
+ */
+interface MatchGroup extends DetailGroup
 {
-    public function text(): string;
-
-    public function textLength(): int;
-
-    public function toInt(): int;
-
-    public function isInt(): bool;
-
-    public function matched(): bool;
-
-    public function name(): ?string;
-
-    public function index(): int;
-
-    /**
-     * @return int|string
-     */
-    public function usedIdentifier();
-
-    public function offset(): int;
-
-    public function byteOffset(): int;
-
-    public function replace(string $replacement): string;
-
-    public function all(): array;
-
-    public function orThrow(string $exceptionClassName = GroupNotMatchedException::class);
 }

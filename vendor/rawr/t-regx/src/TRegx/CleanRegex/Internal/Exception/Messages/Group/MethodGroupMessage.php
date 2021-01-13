@@ -2,22 +2,23 @@
 namespace TRegx\CleanRegex\Internal\Exception\Messages\Group;
 
 use TRegx\CleanRegex\Internal\Exception\Messages\NotMatchedMessage;
-use function sprintf;
+use TRegx\CleanRegex\Internal\Type;
 
 class MethodGroupMessage implements NotMatchedMessage
 {
-    private const MESSAGE = "Expected to call %s() for group '%s', but group was not matched";
-
     /** @var string */
-    private $message;
+    private $method;
+    /** @var string */
+    private $group;
 
     public function __construct(string $method, $nameOrIndex)
     {
-        $this->message = sprintf(self::MESSAGE, $method, $nameOrIndex);
+        $this->method = $method;
+        $this->group = Type::group($nameOrIndex);
     }
 
     public function getMessage(): string
     {
-        return $this->message;
+        return "Expected to call $this->method() for group $this->group, but the group was not matched";
     }
 }

@@ -6,7 +6,7 @@ use TRegx\CleanRegex\Internal\Factory\GroupExceptionFactory;
 use TRegx\CleanRegex\Internal\Factory\NotMatchedOptionalWorker;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupDetails;
 
-class NotMatchedGroup implements MatchGroup
+class NotMatchedGroup implements DetailGroup, MatchGroup
 {
     /** @var GroupDetails */
     private $details;
@@ -14,12 +14,18 @@ class NotMatchedGroup implements MatchGroup
     private $exceptionFactory;
     /** @var NotMatchedOptionalWorker */
     private $optionalWorker;
+    /** @var string */
+    private $subject;
 
-    public function __construct(GroupDetails $details, GroupExceptionFactory $exceptionFactory, NotMatchedOptionalWorker $optionalWorker)
+    public function __construct(GroupDetails $details,
+                                GroupExceptionFactory $exceptionFactory,
+                                NotMatchedOptionalWorker $optionalWorker,
+                                string $subject)
     {
         $this->details = $details;
         $this->exceptionFactory = $exceptionFactory;
         $this->optionalWorker = $optionalWorker;
+        $this->subject = $subject;
     }
 
     public function text(): string
@@ -52,6 +58,11 @@ class NotMatchedGroup implements MatchGroup
         return false;
     }
 
+    public function equals(string $expected): bool
+    {
+        return false;
+    }
+
     public function name(): ?string
     {
         return $this->details->name;
@@ -75,14 +86,29 @@ class NotMatchedGroup implements MatchGroup
         throw $this->groupNotMatched('offset');
     }
 
+    public function tail(): int
+    {
+        throw $this->groupNotMatched('tail');
+    }
+
     public function byteOffset(): int
     {
         throw $this->groupNotMatched('byteOffset');
     }
 
+    public function byteTail(): int
+    {
+        throw $this->groupNotMatched('byteTail');
+    }
+
     public function replace(string $replacement): string
     {
         throw $this->groupNotMatched('replace');
+    }
+
+    public function subject(): string
+    {
+        return $this->subject;
     }
 
     public function all(): array
@@ -95,9 +121,9 @@ class NotMatchedGroup implements MatchGroup
         return $substitute;
     }
 
-    public function orThrow(string $exceptionClassName = GroupNotMatchedException::class): void
+    public function orThrow(string $exceptionClassName = null): void
     {
-        throw $this->optionalWorker->orThrow($exceptionClassName);
+        throw $this->optionalWorker->orThrow($exceptionClassName ?? GroupNotMatchedException::class);
     }
 
     public function orElse(callable $substituteProducer)

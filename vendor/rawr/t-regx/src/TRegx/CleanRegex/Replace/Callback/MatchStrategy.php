@@ -1,12 +1,12 @@
 <?php
 namespace TRegx\CleanRegex\Replace\Callback;
 
-use TRegx\CleanRegex\Match\Details\ReplaceMatch;
+use TRegx\CleanRegex\Match\Details\ReplaceDetail;
 
 class MatchStrategy implements ReplaceCallbackArgumentStrategy
 {
-    public function mapArgument(ReplaceMatch $match): ReplaceMatch
+    public function mapArgument(ReplaceDetail $detail): ReplaceDetail
     {
-        return $match;
+        return $detail;
     }
 }
