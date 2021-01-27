@@ -1,65 +1,80 @@
-[
-    {
-        "name": "rawr/t-regx",
-        "version": "v0.9.13",
-        "version_normalized": "0.9.13.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/T-Regx/T-Regx.git",
-            "reference": "1db7a684c34a53d4773a48711471848e648905aa"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/1db7a684c34a53d4773a48711471848e648905aa",
-            "reference": "1db7a684c34a53d4773a48711471848e648905aa",
-            "shasum": ""
-        },
-        "require": {
-            "ext-mbstring": "*",
-            "php": ">=7.1.0"
-        },
-        "require-dev": {
-            "php-coveralls/php-coveralls": "^2.0",
-            "phpunit/phpunit": "^9.0 || ^8.0 || ^7.5",
-            "rawr/cross-data-providers": "^2.3.0",
-            "rawr/fqn-check": "^1.2.0"
-        },
-        "time": "2020-12-04T18:05:56+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "files": [
-                "helper/helper.php"
+{
+    "packages": [
+        {
+            "name": "rawr/t-regx",
+            "version": "v0.9.14",
+            "version_normalized": "0.9.14.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/T-Regx/T-Regx.git",
+                "reference": "c5e609a6f09f7e905aab3fdfaa752b3932c801eb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/c5e609a6f09f7e905aab3fdfaa752b3932c801eb",
+                "reference": "c5e609a6f09f7e905aab3fdfaa752b3932c801eb",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=7.1.0"
+            },
+            "require-dev": {
+                "php-coveralls/php-coveralls": "^2.0",
+                "phpunit/phpunit": "^9.0 || ^8.0 || ^7.5",
+                "rawr/cross-data-providers": "^2.3.0",
+                "rawr/fqn-check": "^1.2.0"
+            },
+            "time": "2021-01-25T19:34:04+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "files": [
+                    "helper/helper.php"
+                ],
+                "psr-4": {
+                    "TRegx\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
             ],
-            "psr-4": {
-                "TRegx\\": "src/TRegx"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "description": "The most advanced PHP regexp library. Clean, descriptive wrapper functions enhancing PCRE extension methods.",
-        "keywords": [
-            "OOP",
-            "PCRE",
-            "TDD",
-            "automatic delimiters",
-            "clean",
-            "delimiters",
-            "expression",
-            "php",
-            "preg",
-            "preg_match",
-            "preg_match_all",
-            "preg_quote",
-            "preg_replace",
-            "preg_replace_callback",
-            "prepared patterns",
-            "regex",
-            "regexp",
-            "regular",
-            "t-regx"
-        ]
-    }
-]
+            "description": "The most advanced PHP regexp library. Clean, descriptive wrapper functions enhancing PCRE extension methods.",
+            "keywords": [
+                "OOP",
+                "PCRE",
+                "TDD",
+                "automatic delimiters",
+                "clean",
+                "delimiters",
+                "expression",
+                "php",
+                "preg",
+                "preg_match",
+                "preg_match_all",
+                "preg_quote",
+                "preg_replace",
+                "preg_replace_callback",
+                "prepared patterns",
+                "regex",
+                "regexp",
+                "regular",
+                "t-regx"
+            ],
+            "support": {
+                "issues": "https://github.com/T-Regx/T-Regx/issues",
+                "source": "https://github.com/T-Regx/T-Regx/tree/v0.9.14"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/Danon",
+                    "type": "github"
+                }
+            ],
+            "install-path": "../rawr/t-regx"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

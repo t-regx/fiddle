@@ -6,5 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'TRegx\\' => array($vendorDir . '/rawr/t-regx/src/TRegx'),
+    'TRegx\\' => array($vendorDir . '/rawr/t-regx/src'),
 );

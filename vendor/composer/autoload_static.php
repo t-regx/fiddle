@@ -20,8 +20,12 @@ class ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23
     public static $prefixDirsPsr4 = array (
         'TRegx\\' => 
         array (
-            0 => __DIR__ . '/..' . '/rawr/t-regx/src/TRegx',
+            0 => __DIR__ . '/..' . '/rawr/t-regx/src',
         ),
+    );
+
+    public static $classMap = array (
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
@@ -29,6 +33,7 @@ class ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23::$classMap;
 
         }, null, ClassLoader::class);
     }
