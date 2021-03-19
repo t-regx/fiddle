@@ -6,18 +6,21 @@ use TRegx\CleanRegex\Internal\Match\Base\Base;
 use TRegx\CleanRegex\Internal\Match\MatchAll\LazyMatchAllFactory;
 use TRegx\CleanRegex\Internal\Model\GroupPolyfillDecorator;
 use TRegx\CleanRegex\Internal\Model\Match\IRawMatch;
-use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
 use TRegx\CleanRegex\Match\Details\Detail;
-use TRegx\CleanRegex\Match\Details\DetailImpl;
+use TRegx\CleanRegex\Match\Details\MatchDetail;
 
 class MatchFirst
 {
     /** @var Base */
     private $base;
+    /** @var LazyMatchAllFactory */
+    private $allFactory;
 
-    public function __construct(Base $base)
+    public function __construct(Base $base, LazyMatchAllFactory $allFactory)
     {
         $this->base = $base;
+        $this->allFactory = $allFactory;
     }
 
     public function invoke(?callable $consumer)
@@ -49,10 +52,14 @@ class MatchFirst
         }
     }
 
-    private function createDetail(IRawMatchOffset $match): Detail
+    private function createDetail(RawMatchOffset $match): Detail
     {
-        $factory = new LazyMatchAllFactory($this->base);
-        return new DetailImpl($this->base, 0, 1, new GroupPolyfillDecorator($match, $factory, 0),
-            $factory, $this->base->getUserData());
+        return new MatchDetail($this->base,
+            $match->getIndex(),
+            1,
+            new GroupPolyfillDecorator($match, $this->allFactory, $match->getIndex()),
+            $this->allFactory,
+            $this->base->getUserData()
+        );
     }
 }

@@ -8,8 +8,9 @@ use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Exception\NoSuchNthElementException;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
-use TRegx\CleanRegex\Internal\Exception\Messages\FirstFluentMessage;
-use TRegx\CleanRegex\Internal\Factory\FluentOptionalWorker;
+use TRegx\CleanRegex\Internal\Exception\UnmatchedStreamException;
+use TRegx\CleanRegex\Internal\Factory\Worker\MatchStreamWorker;
+use TRegx\CleanRegex\Internal\Factory\Worker\ThrowInternalStreamWorker;
 use TRegx\CleanRegex\Internal\GroupLimit\GroupLimitAll;
 use TRegx\CleanRegex\Internal\GroupLimit\GroupLimitFindFirst;
 use TRegx\CleanRegex\Internal\GroupLimit\GroupLimitFirst;
@@ -19,15 +20,13 @@ use TRegx\CleanRegex\Internal\Match\Details\Group\MatchGroupFactoryStrategy;
 use TRegx\CleanRegex\Internal\Match\FlatMap\ArrayMergeStrategy;
 use TRegx\CleanRegex\Internal\Match\FlatMap\AssignStrategy;
 use TRegx\CleanRegex\Internal\Match\FlatMapper;
-use TRegx\CleanRegex\Internal\Match\MatchAll\EagerMatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\MatchAll\LazyMatchAllFactory;
-use TRegx\CleanRegex\Internal\Match\Stream\BaseStream;
+use TRegx\CleanRegex\Internal\Match\Stream\MatchGroupIntStream;
 use TRegx\CleanRegex\Internal\Match\Stream\MatchGroupStream;
 use TRegx\CleanRegex\Internal\Match\Stream\Stream;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
-use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\PatternLimit;
-use TRegx\CleanRegex\Match\Details\Group\DetailGroup;
+use TRegx\CleanRegex\Match\Details\Group\Group;
 
 class GroupLimit implements PatternLimit, \IteratorAggregate
 {
@@ -37,7 +36,8 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
     private $firstFactory;
     /** @var GroupLimitFindFirst */
     private $findFirstFactory;
-
+    /** @var LazyMatchAllFactory */
+    private $matchAllFactory;
     /** @var Base */
     private $base;
     /** @var string|int */
@@ -50,6 +50,7 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
         $this->allFactory = new GroupLimitAll($base, $nameOrIndex);
         $this->firstFactory = new GroupLimitFirst($base, $nameOrIndex);
         $this->findFirstFactory = new GroupLimitFindFirst($base, $nameOrIndex);
+        $this->matchAllFactory = new LazyMatchAllFactory($base);
         $this->base = $base;
         $this->nameOrIndex = $nameOrIndex;
         $this->offsetLimit = $offsetLimit;
@@ -68,9 +69,9 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
         return $consumer($this->matchGroupDetails($first));
     }
 
-    private function matchGroupDetails(RawMatchOffset $first): DetailGroup
+    private function matchGroupDetails(RawMatchOffset $first): Group
     {
-        $facade = new GroupFacade($first, $this->base, $this->nameOrIndex, new MatchGroupFactoryStrategy(), new LazyMatchAllFactory($this->base));
+        $facade = new GroupFacade($first, $this->base, $this->nameOrIndex, new MatchGroupFactoryStrategy(), $this->matchAllFactory);
         return $facade->createGroup($first);
     }
 
@@ -84,7 +85,7 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
      */
     public function all(): array
     {
-        return $this->allFactory->getAllForGroup()->getGroupTexts($this->nameOrIndex);
+        return \array_values($this->allFactory->getAllForGroup()->getGroupTexts($this->nameOrIndex));
     }
 
     /**
@@ -125,22 +126,22 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
 
     public function getIterator(): Iterator
     {
-        return new ArrayIterator($this->stream()->all());
+        return new ArrayIterator($this->details());
     }
 
     public function map(callable $mapper): array
     {
-        return \array_map($mapper, $this->stream()->all());
+        return \array_map($mapper, $this->details());
     }
 
     public function flatMap(callable $mapper): array
     {
-        return (new FlatMapper($this->stream()->all(), new ArrayMergeStrategy(), $mapper, 'flatMap'))->get();
+        return (new FlatMapper(new ArrayMergeStrategy(), $mapper, 'flatMap'))->get($this->details());
     }
 
     public function flatMapAssoc(callable $mapper): array
     {
-        return (new FlatMapper($this->stream()->all(), new AssignStrategy(), $mapper, 'flatMapAssoc'))->get();
+        return (new FlatMapper(new AssignStrategy(), $mapper, 'flatMapAssoc'))->get($this->details());
     }
 
     /**
@@ -154,7 +155,7 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
          * I use \array_filter(), because we have to call user function no matter what,
          */
         $result = [];
-        foreach (\array_filter($this->stream()->all(), $consumer) as $group) {
+        foreach (\array_filter($this->details(), $consumer) as $group) {
             $result[] = $group->text();
         }
         return $result;
@@ -162,7 +163,7 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
 
     public function forEach(callable $consumer): void
     {
-        foreach ($this->stream()->all() as $group) {
+        foreach ($this->details() as $group) {
             $consumer($group);
         }
     }
@@ -174,11 +175,27 @@ class GroupLimit implements PatternLimit, \IteratorAggregate
 
     public function fluent(): FluentMatchPattern
     {
-        return new FluentMatchPattern($this->stream(), new FluentOptionalWorker(new FirstFluentMessage()));
+        return new FluentMatchPattern($this->stream(), new MatchStreamWorker());
+    }
+
+    public function asInt(): FluentMatchPattern
+    {
+        return new FluentMatchPattern(
+            new MatchGroupIntStream($this->base, $this->nameOrIndex, $this->matchAllFactory),
+            new ThrowInternalStreamWorker());
     }
 
     private function stream(): Stream
     {
-        return new MatchGroupStream(new BaseStream($this->base), $this->base, $this->nameOrIndex, new EagerMatchAllFactory(new RawMatchesOffset([])));
+        return new MatchGroupStream($this->base, $this->nameOrIndex, $this->matchAllFactory);
+    }
+
+    private function details(): array
+    {
+        try {
+            return $this->stream()->all();
+        } catch (UnmatchedStreamException $exception) {
+            return [];
+        }
     }
 }

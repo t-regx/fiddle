@@ -1,7 +1,7 @@
 <?php
 namespace TRegx\CleanRegex\Match\Details\Group;
 
-interface DetailGroup extends BaseDetailGroup
+interface Group extends CapturingGroup
 {
     public function index(): int;
 }

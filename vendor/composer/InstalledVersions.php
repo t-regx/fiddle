@@ -30,19 +30,19 @@ private static $installed = array (
     'aliases' => 
     array (
     ),
-    'reference' => 'b94a01a5ebb31b1151742796153dd53afffb7645',
+    'reference' => '9e0e58bd02ec6bc8d8d6c250bf288d72cbb011e5',
     'name' => 'rawr/t-regx-playground',
   ),
   'versions' => 
   array (
     'rawr/t-regx' => 
     array (
-      'pretty_version' => 'v0.9.14',
-      'version' => '0.9.14.0',
+      'pretty_version' => 'v0.10.2',
+      'version' => '0.10.2.0',
       'aliases' => 
       array (
       ),
-      'reference' => 'c5e609a6f09f7e905aab3fdfaa752b3932c801eb',
+      'reference' => '310779ad7d9039caeb6c57a81d5a19a35f6b3723',
     ),
     'rawr/t-regx-playground' => 
     array (
@@ -51,7 +51,7 @@ private static $installed = array (
       'aliases' => 
       array (
       ),
-      'reference' => 'b94a01a5ebb31b1151742796153dd53afffb7645',
+      'reference' => '9e0e58bd02ec6bc8d8d6c250bf288d72cbb011e5',
     ),
   ),
 );

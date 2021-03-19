@@ -17,11 +17,11 @@ use TRegx\CleanRegex\Internal\Match\UserData;
 use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
 use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\Subjectable;
-use TRegx\CleanRegex\Match\Details\Group\DetailGroup;
+use TRegx\CleanRegex\Match\Details\Group\Group;
 use TRegx\CleanRegex\Match\Details\Groups\IndexedGroups;
 use TRegx\CleanRegex\Match\Details\Groups\NamedGroups;
 
-class DetailImpl implements Detail, Match
+class MatchDetail implements Detail
 {
     /** @var Subjectable */
     private $subjectable;
@@ -39,13 +39,14 @@ class DetailImpl implements Detail, Match
     /** @var int */
     private $limit;
 
-    public function __construct(Subjectable $subjectable,
-                                int $index,
-                                int $limit,
-                                IRawMatchOffset $match,
-                                MatchAllFactory $allFactory,
-                                UserData $userData,
-                                GroupFactoryStrategy $strategy = null)
+    public function __construct(
+        Subjectable $subjectable,
+        int $index,
+        int $limit,
+        IRawMatchOffset $match,
+        MatchAllFactory $allFactory,
+        UserData $userData,
+        GroupFactoryStrategy $strategy = null)
     {
         $this->subjectable = $subjectable;
         $this->index = $index;
@@ -116,10 +117,10 @@ class DetailImpl implements Detail, Match
 
     /**
      * @param string|int $nameOrIndex
-     * @return DetailGroup
+     * @return Group
      * @throws NonexistentGroupException
      */
-    public function group($nameOrIndex): DetailGroup
+    public function group($nameOrIndex): Group
     {
         if (!$this->hasGroup($nameOrIndex)) {
             throw new NonexistentGroupException($nameOrIndex);
@@ -188,7 +189,7 @@ class DetailImpl implements Detail, Match
 
     public function all(): array
     {
-        return $this->getMatches()->getTexts();
+        return \array_values($this->getMatches()->getTexts());
     }
 
     private function getMatches(): RawMatchesOffset

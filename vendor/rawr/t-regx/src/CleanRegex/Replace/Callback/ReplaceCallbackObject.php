@@ -10,12 +10,9 @@ use TRegx\CleanRegex\Internal\Model\Adapter\RawMatchesToMatchAdapter;
 use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\Subjectable;
 use TRegx\CleanRegex\Match\Details\Detail;
-use TRegx\CleanRegex\Match\Details\DetailImpl;
-use TRegx\CleanRegex\Match\Details\Group\BaseDetailGroup;
+use TRegx\CleanRegex\Match\Details\Group\CapturingGroup;
+use TRegx\CleanRegex\Match\Details\MatchDetail;
 use TRegx\CleanRegex\Match\Details\ReplaceDetail;
-use TRegx\CleanRegex\Match\Details\ReplaceDetailImpl;
-use function call_user_func;
-use function is_string;
 
 class ReplaceCallbackObject
 {
@@ -60,7 +57,7 @@ class ReplaceCallbackObject
 
     private function invoke(array $match): string
     {
-        $result = call_user_func($this->callback, $this->matchObject());
+        $result = ($this->callback)($this->matchObject());
         $replacement = $this->getReplacement($result);
         $this->modifySubject($replacement);
         $this->modifyOffset($match[0], $replacement);
@@ -75,8 +72,8 @@ class ReplaceCallbackObject
     private function createDetailObject(): ReplaceDetail
     {
         $index = $this->counter++;
-        return new ReplaceDetailImpl(
-            new DetailImpl(
+        return new ReplaceDetail(
+            new MatchDetail(
                 $this->subject,
                 $index,
                 $this->limit,
@@ -95,10 +92,10 @@ class ReplaceCallbackObject
 
     private function getReplacement($replacement): string
     {
-        if (is_string($replacement)) {
+        if (\is_string($replacement)) {
             return $replacement;
         }
-        if ($replacement instanceof BaseDetailGroup) {
+        if ($replacement instanceof CapturingGroup) {
             return $this->groupAsReplacement($replacement);
         }
         if ($replacement instanceof Detail) {
@@ -107,7 +104,7 @@ class ReplaceCallbackObject
         throw new InvalidReplacementException($replacement);
     }
 
-    private function groupAsReplacement(BaseDetailGroup $group): string
+    private function groupAsReplacement(CapturingGroup $group): string
     {
         if ($group->matched()) {
             return $group->text();
