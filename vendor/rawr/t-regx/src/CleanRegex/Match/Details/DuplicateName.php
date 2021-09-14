@@ -1,13 +1,18 @@
 <?php
 namespace TRegx\CleanRegex\Match\Details;
 
-use TRegx\CleanRegex\Internal\GroupNameValidator;
+use TRegx\CleanRegex\Exception\NonexistentGroupException;
+use TRegx\CleanRegex\Internal\GroupKey\GroupName;
+use TRegx\CleanRegex\Internal\GroupKey\Signatures;
 use TRegx\CleanRegex\Internal\Match\Details\DuplicateNamedGroupAdapter;
+use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFacade;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFactoryStrategy;
-use TRegx\CleanRegex\Internal\Match\Details\Group\RuntimeGroupFacade;
+use TRegx\CleanRegex\Internal\Match\Details\Group\Handle\RuntimeNamedGroup;
 use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
-use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
-use TRegx\CleanRegex\Internal\Subjectable;
+use TRegx\CleanRegex\Internal\Model\GroupAware;
+use TRegx\CleanRegex\Internal\Model\Match\Entry;
+use TRegx\CleanRegex\Internal\Model\Match\UsedForGroup;
+use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Group\DuplicateNamedGroup;
 
 /**
@@ -79,30 +84,46 @@ use TRegx\CleanRegex\Match\Details\Group\DuplicateNamedGroup;
  */
 class DuplicateName
 {
-    /** @var IRawMatchOffset */
-    private $match;
-    /** @var Subjectable */
-    private $subject;
-    /** @var GroupFactoryStrategy */
-    private $factory;
-    /** @var MatchAllFactory */
-    private $all;
+    /** @var UsedForGroup */
+    private $forGroup;
+    /** @var Entry */
+    private $entry;
+    /** @var GroupFacade */
+    private $groupFacade;
+    /** @var GroupAware */
+    private $groupAware;
 
-    public function __construct(IRawMatchOffset $match,
-                                Subjectable $subject,
+    public function __construct(GroupAware           $groupAware,
+                                UsedForGroup         $forGroup,
+                                Entry                $entry,
+                                Subject              $subject,
                                 GroupFactoryStrategy $factoryStrategy,
-                                MatchAllFactory $allFactory)
+                                MatchAllFactory      $allFactory,
+                                Signatures           $signatures)
     {
-        $this->match = $match;
-        $this->subject = $subject;
-        $this->factory = $factoryStrategy;
-        $this->all = $allFactory;
+        $this->forGroup = $forGroup;
+        $this->entry = $entry;
+        $this->groupFacade = new GroupFacade($subject, $factoryStrategy, $allFactory,
+            new NotMatched($groupAware, $subject), new RuntimeNamedGroup(), $signatures);
+        $this->groupAware = $groupAware;
     }
 
     public function group(string $groupName): DuplicateNamedGroup
     {
-        (new GroupNameValidator($groupName))->validate();
-        $facade = new RuntimeGroupFacade($this->match, $this->subject, $groupName, $this->factory, $this->all);
-        return new DuplicateNamedGroupAdapter($groupName, $facade->createGroup($this->match));
+        $group = new GroupName($groupName);
+        if (!$this->groupAware->hasGroup($group->nameOrIndex())) {
+            throw new NonexistentGroupException($group);
+        }
+        return new DuplicateNamedGroupAdapter($groupName, $this->groupFacade->createGroup($group, $this->forGroup, $this->entry));
+    }
+
+    public function get(string $groupName): string
+    {
+        return $this->group($groupName)->text();
+    }
+
+    public function matched(string $groupName): bool
+    {
+        return $this->group($groupName)->matched();
     }
 }

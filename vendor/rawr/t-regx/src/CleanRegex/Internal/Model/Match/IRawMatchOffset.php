@@ -1,23 +1,15 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Model\Match;
 
-use TRegx\CleanRegex\Internal\Model\IRawWithGroups;
+use TRegx\CleanRegex\Internal\Model\GroupAware;
 
-interface IRawMatchOffset extends IRawMatch, IRawWithGroups
+/**
+ * @deprecated
+ */
+interface IRawMatchOffset extends
+    GroupAware,
+    Entry,
+    UsedInCompositeGroups,
+    UsedForGroup
 {
-    public function byteOffset(): int;
-
-    public function isGroupMatched($nameOrIndex): bool;
-
-    public function getGroupTextAndOffset($nameOrIndex): array;
-
-    /**
-     * @return (string|null)[]
-     */
-    public function getGroupsTexts(): array;
-
-    /**
-     * @return (int|null)[]
-     */
-    public function getGroupsOffsets(): array;
 }

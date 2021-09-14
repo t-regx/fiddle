@@ -1,22 +1,22 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Replace\By;
 
-use TRegx\CleanRegex\Internal\InternalPattern;
-use TRegx\CleanRegex\Internal\Subjectable;
+use TRegx\CleanRegex\Internal\Definition;
+use TRegx\CleanRegex\Internal\Subject;
 use TRegx\SafeRegex\preg;
 
 class PerformanceEmptyGroupReplace
 {
-    /** @var InternalPattern */
-    private $pattern;
-    /** @var Subjectable */
+    /** @var Definition */
+    private $definition;
+    /** @var Subject */
     private $subject;
     /** @var int */
     private $limit;
 
-    public function __construct(InternalPattern $pattern, Subjectable $subject, int $limit)
+    public function __construct(Definition $definition, Subject $subject, int $limit)
     {
-        $this->pattern = $pattern;
+        $this->definition = $definition;
         $this->subject = $subject;
         $this->limit = $limit;
     }
@@ -33,7 +33,7 @@ class PerformanceEmptyGroupReplace
          * with an empty string, is possible with just {@see preg_replace}.
          */
         return preg::replace(
-            $this->pattern->pattern,
+            $this->definition->pattern,
             "\\$index",
             $this->subject->getSubject(),
             $this->limit);

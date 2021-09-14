@@ -2,12 +2,9 @@
 namespace TRegx\CleanRegex\Internal\Model\Match;
 
 use TRegx\CleanRegex\Exception\InternalCleanRegexException;
-use function array_key_exists;
-use function array_keys;
-use function array_map;
-use function is_array;
+use TRegx\SafeRegex\Internal\Tuple;
 
-class RawMatchOffset implements IRawMatchOffset
+class RawMatchOffset
 {
     /** @var array[] */
     private $match;
@@ -27,13 +24,12 @@ class RawMatchOffset implements IRawMatchOffset
 
     public function getText(): string
     {
-        [$text, $offset] = $this->match[0];
-        return $text;
+        return Tuple::first($this->match[0]);
     }
 
     public function hasGroup($nameOrIndex): bool
     {
-        return array_key_exists($nameOrIndex, $this->match);
+        return \array_key_exists($nameOrIndex, $this->match);
     }
 
     public function getGroup($nameOrIndex): ?string
@@ -52,7 +48,7 @@ class RawMatchOffset implements IRawMatchOffset
 
     public function getGroupByteOffset($nameOrIndex): ?int
     {
-        [$text, $offset] = $this->match[$nameOrIndex];
+        $offset = Tuple::second($this->match[$nameOrIndex]);
         if ($offset === -1) {
             return null;
         }
@@ -61,18 +57,17 @@ class RawMatchOffset implements IRawMatchOffset
 
     public function getGroupKeys(): array
     {
-        return array_keys($this->match);
+        return \array_keys($this->match);
     }
 
     public function isGroupMatched($nameOrIndex): bool
     {
-        if (!array_key_exists($nameOrIndex, $this->match)) {
+        if (!\array_key_exists($nameOrIndex, $this->match)) {
             return false;
         }
         $match = $this->match[$nameOrIndex];
-        if (is_array($match)) {
-            [$text, $offset] = $match;
-            return $offset !== -1;
+        if (\is_array($match)) {
+            return Tuple::second($match) !== -1;
         }
         return false;
     }
@@ -80,42 +75,6 @@ class RawMatchOffset implements IRawMatchOffset
     public function getGroupTextAndOffset($nameOrIndex): array
     {
         return $this->match[$nameOrIndex];
-    }
-
-    /**
-     * @return (string|null)[]
-     */
-    public function getGroupsTexts(): array
-    {
-        return array_map(static function ($match) {
-            if ($match === null) {
-                return null;
-            }
-            if ($match === '') {
-                return null;
-            }
-            if (is_array($match)) {
-                [$text, $offset] = $match;
-                if ($offset === -1) {
-                    return null;
-                }
-                return $text;
-            }
-            // @codeCoverageIgnoreStart
-            throw new InternalCleanRegexException();
-            // @codeCoverageIgnoreEnd
-        }, $this->match);
-    }
-
-    /**
-     * @return (int|null)[]
-     */
-    public function getGroupsOffsets(): array
-    {
-        return array_map(static function (array $match) {
-            [$text, $offset] = $match;
-            return $offset;
-        }, $this->match);
     }
 
     public function getIndex(): int

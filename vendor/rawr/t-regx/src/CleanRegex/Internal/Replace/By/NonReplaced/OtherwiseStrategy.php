@@ -2,6 +2,8 @@
 namespace TRegx\CleanRegex\Internal\Replace\By\NonReplaced;
 
 use TRegx\CleanRegex\Exception\InvalidReturnValueException;
+use TRegx\CleanRegex\Internal\Subject;
+use TRegx\CleanRegex\Internal\Type\ValueType;
 
 class OtherwiseStrategy implements SubjectRs
 {
@@ -13,12 +15,12 @@ class OtherwiseStrategy implements SubjectRs
         $this->mapper = $mapper;
     }
 
-    public function substitute(string $subject): string
+    public function substitute(Subject $subject): string
     {
-        $value = \call_user_func($this->mapper, $subject);
+        $value = ($this->mapper)($subject->getSubject());
         if (\is_string($value)) {
             return $value;
         }
-        throw InvalidReturnValueException::forOtherwise($value);
+        throw new InvalidReturnValueException('otherwise', 'string', (new ValueType($value)));
     }
 }

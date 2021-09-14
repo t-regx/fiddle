@@ -1,14 +1,14 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Base;
 
-use TRegx\CleanRegex\Internal\InternalPattern as Pattern;
+use TRegx\CleanRegex\Internal\Definition;
 use TRegx\CleanRegex\Internal\Match\Predicate;
 use TRegx\CleanRegex\Internal\Match\UserData;
 use TRegx\CleanRegex\Internal\Model\DetailObjectFactory;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatch;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatches;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
-use TRegx\CleanRegex\Internal\Model\Matches\RawMatches;
-use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
 
 class DetailPredicateBaseDecorator implements Base
 {
@@ -23,10 +23,10 @@ class DetailPredicateBaseDecorator implements Base
     {
         $this->base = $base;
         $this->predicate = $predicate;
-        $this->detailFactory = new DetailObjectFactory($this->base, -1, $this->base->getUserData());
+        $this->detailFactory = new DetailObjectFactory($this->base, $this->base->getUserData());
     }
 
-    public function getPattern(): Pattern
+    public function getPattern(): Definition
     {
         return $this->base->getPattern();
     }
@@ -39,7 +39,7 @@ class DetailPredicateBaseDecorator implements Base
     public function match(): RawMatch
     {
         $matches = $this->base->matchAllOffsets();
-        foreach ($matches->getDetailObjects($this->detailFactory) as $index => $match) {
+        foreach ($this->detailFactory->mapToDetailObjects($matches) as $index => $match) {
             if ($this->predicate->test($match)) {
                 return $matches->getRawMatch($index);
             }
@@ -50,7 +50,7 @@ class DetailPredicateBaseDecorator implements Base
     public function matchOffset(): RawMatchOffset
     {
         $matches = $this->base->matchAllOffsets();
-        foreach ($matches->getDetailObjects($this->detailFactory) as $index => $match) {
+        foreach ($this->detailFactory->mapToDetailObjects($matches) as $index => $match) {
             if ($this->predicate->test($match)) {
                 return $matches->getRawMatchOffset($index);
             }
@@ -60,12 +60,12 @@ class DetailPredicateBaseDecorator implements Base
 
     public function matchAll(): RawMatches
     {
-        return new RawMatches($this->removeOffsets($this->base->matchAllOffsets()->filterMatchesByDetailObjects($this->predicate, $this->detailFactory)));
+        return new RawMatches($this->removeOffsets($this->detailFactory->mapToDetailObjectsFiltered($this->base->matchAllOffsets(), $this->predicate)));
     }
 
     public function matchAllOffsets(): RawMatchesOffset
     {
-        return new RawMatchesOffset($this->base->matchAllOffsets()->filterMatchesByDetailObjects($this->predicate, $this->detailFactory));
+        return new RawMatchesOffset($this->detailFactory->mapToDetailObjectsFiltered($this->base->matchAllOffsets(), $this->predicate));
     }
 
     private function removeOffsets(array $filterMatches): array
@@ -84,10 +84,5 @@ class DetailPredicateBaseDecorator implements Base
     public function getUserData(): UserData
     {
         return $this->base->getUserData();
-    }
-
-    public function getUnfilteredBase(): Base
-    {
-        return $this->base->getUnfilteredBase();
     }
 }

@@ -1,14 +1,16 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Stream;
 
-class ArrayOnlyStream implements Stream
+class ArrayOnlyStream implements Upstream
 {
-    /** @var Stream */
+    use PreservesKey;
+
+    /** @var Upstream */
     private $stream;
     /** @var callable */
     private $mapper;
 
-    public function __construct(Stream $stream, callable $mapper)
+    public function __construct(Upstream $stream, callable $mapper)
     {
         $this->stream = $stream;
         $this->mapper = $mapper;
@@ -16,17 +18,11 @@ class ArrayOnlyStream implements Stream
 
     public function all(): array
     {
-        $mapper = $this->mapper;
-        return $mapper($this->stream->all());
+        return ($this->mapper)($this->stream->all());
     }
 
     public function first()
     {
         return $this->stream->first();
-    }
-
-    public function firstKey()
-    {
-        return $this->stream->firstKey();
     }
 }

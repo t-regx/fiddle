@@ -2,45 +2,35 @@
 namespace TRegx\CleanRegex\Match\Details\Groups;
 
 use TRegx\CleanRegex\Exception\InternalCleanRegexException;
-use TRegx\CleanRegex\Internal\ByteOffset;
-use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
-use TRegx\CleanRegex\Internal\Subjectable;
-use function array_slice;
+use TRegx\CleanRegex\Internal\Model\Match\UsedInCompositeGroups;
+use TRegx\CleanRegex\Internal\Offset\ByteOffset;
+use TRegx\CleanRegex\Internal\Subject;
 
 abstract class AbstractMatchGroups implements MatchGroups
 {
-    /** @var IRawMatchOffset */
-    protected $match;
-    /** @var Subjectable */
-    private $subjectable;
+    /** @var UsedInCompositeGroups */
+    private $match;
+    /** @var Subject */
+    private $subject;
 
-    public function __construct(IRawMatchOffset $match, Subjectable $subjectable)
+    public function __construct(UsedInCompositeGroups $match, Subject $subject)
     {
         $this->match = $match;
-        $this->subjectable = $subjectable;
+        $this->subject = $subject;
     }
 
-    /**
-     * @return (string|null)[]
-     */
     public function texts(): array
     {
         return $this->sliceAndFilter($this->match->getGroupsTexts());
     }
 
-    /**
-     * @return (int|null)[]
-     */
     public function offsets(): array
     {
-        return \array_map(function (int $offset) {
-            return ByteOffset::toCharacterOffset($this->subjectable->getSubject(), $offset);
+        return \array_map(function (int $offset): int {
+            return ByteOffset::toCharacterOffset($this->subject->getSubject(), $offset);
         }, $this->byteOffsets());
     }
 
-    /**
-     * @return (int|null)[]
-     */
     public function byteOffsets(): array
     {
         return $this->sliceAndFilter($this->match->getGroupsOffsets());
@@ -48,7 +38,7 @@ abstract class AbstractMatchGroups implements MatchGroups
 
     private function sliceAndFilter(array $valuesWithWhole): array
     {
-        return $this->filterValues(array_slice($valuesWithWhole, 1));
+        return $this->filterValues(\array_slice($valuesWithWhole, 1));
     }
 
     private function filterValues(array $values): array

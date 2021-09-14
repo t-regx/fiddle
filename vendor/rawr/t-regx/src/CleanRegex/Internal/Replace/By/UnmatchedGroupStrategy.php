@@ -2,7 +2,8 @@
 namespace TRegx\CleanRegex\Internal\Replace\By;
 
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
-use TRegx\CleanRegex\Internal\Exception\Messages\Group\ReplacementWithUnmatchedGroupMessage;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
+use TRegx\CleanRegex\Internal\Messages\Group\ReplacementWithUnmatchedGroupMessage;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\DetailGroupMapper;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\GroupMapper;
 use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ComputedMatchStrategy;
@@ -18,17 +19,17 @@ class UnmatchedGroupStrategy implements GroupReplace
 {
     /** @var GroupFallbackReplacer */
     private $replacer;
-    /** @var string|int */
-    private $nameOrIndex;
+    /** @var GroupKey */
+    private $group;
     /** @var GroupMapper */
     private $mapper;
     /** @var Wrapper */
     private $middlewareMapper;
 
-    public function __construct(GroupFallbackReplacer $replacer, $nameOrIndex, DetailGroupMapper $mapper, Wrapper $middlewareMapper)
+    public function __construct(GroupFallbackReplacer $replacer, GroupKey $group, DetailGroupMapper $mapper, Wrapper $middlewareMapper)
     {
         $this->replacer = $replacer;
-        $this->nameOrIndex = $nameOrIndex;
+        $this->group = $group;
         $this->mapper = $mapper;
         $this->middlewareMapper = $middlewareMapper;
     }
@@ -47,7 +48,7 @@ class UnmatchedGroupStrategy implements GroupReplace
     {
         return $this->replace(new ThrowStrategy(
             $exceptionClassName ?? GroupNotMatchedException::class,
-            new ReplacementWithUnmatchedGroupMessage($this->nameOrIndex)));
+            new ReplacementWithUnmatchedGroupMessage($this->group)));
     }
 
     public function orElseIgnore(): string
@@ -62,6 +63,6 @@ class UnmatchedGroupStrategy implements GroupReplace
 
     private function replace(MatchRs $substitute): string
     {
-        return $this->replacer->replaceOrFallback($this->nameOrIndex, $this->mapper, new WrappingMatchRs($substitute, $this->middlewareMapper));
+        return $this->replacer->replaceOrFallback($this->group, $this->mapper, new WrappingMatchRs($substitute, $this->middlewareMapper));
     }
 }

@@ -3,26 +3,28 @@ namespace TRegx\CleanRegex\Replace\Callback;
 
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\InvalidReplacementException;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Match\Details\Group\ReplaceMatchGroupFactoryStrategy;
 use TRegx\CleanRegex\Internal\Match\MatchAll\EagerMatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\UserData;
-use TRegx\CleanRegex\Internal\Model\Adapter\RawMatchesToMatchAdapter;
-use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
-use TRegx\CleanRegex\Internal\Subjectable;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatchesOffset;
+use TRegx\CleanRegex\Internal\Model\RawMatchesToMatchAdapter;
+use TRegx\CleanRegex\Internal\Subject;
+use TRegx\CleanRegex\Internal\Type\ValueType;
 use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Match\Details\Group\CapturingGroup;
 use TRegx\CleanRegex\Match\Details\MatchDetail;
-use TRegx\CleanRegex\Match\Details\ReplaceDetail;
+use TRegx\CleanRegex\Replace\Details\Modification;
+use TRegx\CleanRegex\Replace\Details\ReplaceDetail;
 
 class ReplaceCallbackObject
 {
     /** @var callable */
     private $callback;
-    /** @var Subjectable */
+    /** @var Subject */
     private $subject;
     /** @var RawMatchesOffset */
     private $analyzedPattern;
-
     /** @var int */
     private $counter = 0;
     /** @var int */
@@ -34,10 +36,10 @@ class ReplaceCallbackObject
     /** @var ReplaceCallbackArgumentStrategy */
     private $argumentStrategy;
 
-    public function __construct(callable $callback,
-                                Subjectable $subject,
-                                RawMatchesOffset $analyzedPattern,
-                                int $limit,
+    public function __construct(callable                        $callback,
+                                Subject                         $subject,
+                                RawMatchesOffset                $analyzedPattern,
+                                int                             $limit,
                                 ReplaceCallbackArgumentStrategy $argumentStrategy)
     {
         $this->callback = $callback;
@@ -72,22 +74,18 @@ class ReplaceCallbackObject
     private function createDetailObject(): ReplaceDetail
     {
         $index = $this->counter++;
-        return new ReplaceDetail(
-            new MatchDetail(
-                $this->subject,
-                $index,
-                $this->limit,
-                new RawMatchesToMatchAdapter($this->analyzedPattern, $index),
-                new EagerMatchAllFactory($this->analyzedPattern),
-                new UserData(),
-                new ReplaceMatchGroupFactoryStrategy(
-                    $this->byteOffsetModification,
-                    $this->subjectModification
-                )
-            ),
-            $this->byteOffsetModification,
-            $this->subjectModification
-        );
+        $match = new RawMatchesToMatchAdapter($this->analyzedPattern, $index);
+        return new ReplaceDetail(MatchDetail::create(
+            $this->subject,
+            $index,
+            $this->limit,
+            $match,
+            new EagerMatchAllFactory($this->analyzedPattern),
+            new UserData(),
+            new ReplaceMatchGroupFactoryStrategy(
+                $this->byteOffsetModification,
+                $this->subjectModification)),
+            new Modification($match, $this->subjectModification, $this->byteOffsetModification));
     }
 
     private function getReplacement($replacement): string
@@ -101,7 +99,7 @@ class ReplaceCallbackObject
         if ($replacement instanceof Detail) {
             return $replacement;
         }
-        throw new InvalidReplacementException($replacement);
+        throw new InvalidReplacementException(new ValueType($replacement));
     }
 
     private function groupAsReplacement(CapturingGroup $group): string
@@ -109,7 +107,7 @@ class ReplaceCallbackObject
         if ($group->matched()) {
             return $group->text();
         }
-        throw GroupNotMatchedException::forReplacement($this->subject, $group->usedIdentifier());
+        throw GroupNotMatchedException::forReplacement(GroupKey::of($group->usedIdentifier()));
     }
 
     private function modifyOffset(string $search, string $replacement): void
@@ -125,7 +123,6 @@ class ReplaceCallbackObject
             $this->subjectModification,
             $replacement,
             $offset + $this->byteOffsetModification,
-            \strlen($text)
-        );
+            \strlen($text));
     }
 }

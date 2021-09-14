@@ -4,7 +4,7 @@ namespace TRegx\CleanRegex\Match\Details;
 use TRegx\CleanRegex\Internal\Match\Base\Base;
 use TRegx\CleanRegex\Internal\Match\MatchAll\EagerMatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\UserData;
-use TRegx\CleanRegex\Internal\Model\Adapter\RawMatchesToMatchAdapter;
+use TRegx\CleanRegex\Internal\Model\RawMatchesToMatchAdapter;
 use TRegx\CleanRegex\Match\Details\Groups\IndexedGroups;
 use TRegx\CleanRegex\Match\Details\Groups\NamedGroups;
 
@@ -16,7 +16,6 @@ class LazyDetail implements Detail
     private $index;
     /** @var int */
     private $limit;
-
     /** @var MatchDetail|null */
     private $lazyMatch = null;
 
@@ -36,14 +35,16 @@ class LazyDetail implements Detail
     private function createLazyMatch(): MatchDetail
     {
         $matches = $this->base->matchAllOffsets();
-        return new MatchDetail(
+        return MatchDetail::create(
             $this->base,
             -99, // These values are never used, because `index()` and `limit()` in LazyMatch aren't
             -99, // passed through `Detail`, because they are read from fields.
+            // We could pass real data here, but we could never test it, since the code doesn't
+            // use those values. We could also pass it and read it, but then LazyDetail.index()
+            // and  LazyDetail.limit() would perform match unnecessarily.
             new RawMatchesToMatchAdapter($matches, $this->index),
             new EagerMatchAllFactory($matches),
-            new UserData()
-        );
+            new UserData());
     }
 
     public function subject(): string
@@ -81,14 +82,14 @@ class LazyDetail implements Detail
         return $this->match()->textByteLength();
     }
 
-    public function toInt(): int
+    public function toInt(int $base = null): int
     {
-        return $this->match()->toInt();
+        return $this->match()->toInt($base);
     }
 
-    public function isInt(): bool
+    public function isInt(int $base = null): bool
     {
-        return $this->match()->isInt();
+        return $this->match()->isInt($base);
     }
 
     public function index(): int

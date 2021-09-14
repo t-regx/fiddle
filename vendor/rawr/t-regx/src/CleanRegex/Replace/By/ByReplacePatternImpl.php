@@ -1,7 +1,8 @@
 <?php
 namespace TRegx\CleanRegex\Replace\By;
 
-use TRegx\CleanRegex\Internal\GroupNameValidator;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
+use TRegx\CleanRegex\Internal\GroupKey\WholeMatch;
 use TRegx\CleanRegex\Internal\Replace\By\GroupFallbackReplacer;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\DictionaryMapper;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\SubstituteFallbackMapper;
@@ -11,6 +12,7 @@ use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ThrowMatchRs;
 use TRegx\CleanRegex\Internal\Replace\By\PerformanceEmptyGroupReplace;
 use TRegx\CleanRegex\Internal\Replace\Wrapper;
 use TRegx\CleanRegex\Internal\Replace\WrappingMapper;
+use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Replace\Callback\ReplacePatternCallbackInvoker;
 
 class ByReplacePatternImpl implements ByReplacePattern
@@ -19,7 +21,7 @@ class ByReplacePatternImpl implements ByReplacePattern
     private $fallbackReplacer;
     /** @var LazySubjectRs */
     private $substitute;
-    /** @var string */
+    /** @var Subject */
     private $subject;
     /** @var PerformanceEmptyGroupReplace */
     private $performanceReplace;
@@ -28,12 +30,12 @@ class ByReplacePatternImpl implements ByReplacePattern
     /** @var Wrapper */
     private $wrapper;
 
-    public function __construct(GroupFallbackReplacer $fallbackReplacer,
-                                LazySubjectRs $substitute,
-                                PerformanceEmptyGroupReplace $performanceReplace,
+    public function __construct(GroupFallbackReplacer         $fallbackReplacer,
+                                LazySubjectRs                 $substitute,
+                                PerformanceEmptyGroupReplace  $performanceReplace,
                                 ReplacePatternCallbackInvoker $replaceCallbackInvoker,
-                                string $subject,
-                                Wrapper $middlewareMapper)
+                                Subject                       $subject,
+                                Wrapper                       $middlewareMapper)
     {
         $this->fallbackReplacer = $fallbackReplacer;
         $this->substitute = $substitute;
@@ -45,12 +47,11 @@ class ByReplacePatternImpl implements ByReplacePattern
 
     public function group($nameOrIndex): ByGroupReplacePattern
     {
-        (new GroupNameValidator($nameOrIndex))->validate();
         return new ByGroupReplacePatternImpl(
             $this->fallbackReplacer,
             $this->performanceReplace,
             $this->replaceCallbackInvoker,
-            $nameOrIndex,
+            GroupKey::of($nameOrIndex),
             $this->subject,
             $this->wrapper);
     }
@@ -68,7 +69,7 @@ class ByReplacePatternImpl implements ByReplacePattern
     private function replace(array $map, LazySubjectRs $substitute): string
     {
         return $this->fallbackReplacer->replaceOrFallback(
-            0,
+            new WholeMatch(),
             new SubstituteFallbackMapper(
                 new WrappingMapper(new DictionaryMapper($map), $this->wrapper),
                 $substitute,

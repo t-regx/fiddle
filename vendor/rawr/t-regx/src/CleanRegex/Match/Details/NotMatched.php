@@ -1,23 +1,21 @@
 <?php
 namespace TRegx\CleanRegex\Match\Details;
 
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\GroupNames;
-use TRegx\CleanRegex\Internal\GroupNameValidator;
-use TRegx\CleanRegex\Internal\Model\IRawWithGroups;
-use TRegx\CleanRegex\Internal\Subjectable;
-use function array_filter;
-use function count;
+use TRegx\CleanRegex\Internal\Model\GroupAware;
+use TRegx\CleanRegex\Internal\Subject;
 
 class NotMatched implements BaseDetail
 {
-    /** @var IRawWithGroups */
-    private $match;
-    /** @var Subjectable */
+    /** @var GroupAware */
+    private $groupAware;
+    /** @var Subject */
     private $subject;
 
-    public function __construct(IRawWithGroups $match, Subjectable $subject)
+    public function __construct(GroupAware $groupAware, Subject $subject)
     {
-        $this->match = $match;
+        $this->groupAware = $groupAware;
         $this->subject = $subject;
     }
 
@@ -31,13 +29,13 @@ class NotMatched implements BaseDetail
      */
     public function groupNames(): array
     {
-        return (new GroupNames($this->match))->groupNames();
+        return (new GroupNames($this->groupAware))->groupNames();
     }
 
     public function groupsCount(): int
     {
-        $indexedGroups = array_filter($this->match->getGroupKeys(), '\is_int');
-        return count($indexedGroups) - 1;
+        $indexedGroups = \array_filter($this->groupAware->getGroupKeys(), '\is_int');
+        return \count($indexedGroups) - 1;
     }
 
     /**
@@ -46,7 +44,6 @@ class NotMatched implements BaseDetail
      */
     public function hasGroup($nameOrIndex): bool
     {
-        (new GroupNameValidator($nameOrIndex))->validate();
-        return $this->match->hasGroup($nameOrIndex);
+        return $this->groupAware->hasGroup(GroupKey::of($nameOrIndex)->nameOrIndex());
     }
 }

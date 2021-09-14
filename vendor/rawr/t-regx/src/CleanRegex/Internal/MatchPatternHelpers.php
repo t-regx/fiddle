@@ -3,6 +3,7 @@ namespace TRegx\CleanRegex\Internal;
 
 use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Match\Details\NotMatched;
 use TRegx\CleanRegex\Match\Optional;
@@ -23,9 +24,9 @@ trait MatchPatternHelpers
             ->orElse(static function (NotMatched $notMatched) use ($nameOrIndex1, $nameOrIndex2) {
                 self::validateGroups($notMatched, [$nameOrIndex1, $nameOrIndex2]);
                 throw SubjectNotMatchedException::forFirstTuple(
-                    new Subject($notMatched->subject()),
-                    $nameOrIndex1,
-                    $nameOrIndex2);
+                    new StringSubject($notMatched->subject()),
+                    GroupKey::of($nameOrIndex1),
+                    GroupKey::of($nameOrIndex2));
             });
     }
 
@@ -42,10 +43,10 @@ trait MatchPatternHelpers
             ->orElse(static function (NotMatched $notMatched) use ($nameOrIndex1, $nameOrIndex2, $nameOrIndex3) {
                 self::validateGroups($notMatched, [$nameOrIndex1, $nameOrIndex2, $nameOrIndex3]);
                 throw SubjectNotMatchedException::forFirstTriple(
-                    new Subject($notMatched->subject()),
-                    $nameOrIndex1,
-                    $nameOrIndex2,
-                    $nameOrIndex3);
+                    new StringSubject($notMatched->subject()),
+                    GroupKey::of($nameOrIndex1),
+                    GroupKey::of($nameOrIndex2),
+                    GroupKey::of($nameOrIndex3));
             });
     }
 
@@ -53,7 +54,7 @@ trait MatchPatternHelpers
     {
         foreach ($groups as $group) {
             if (!$notMatched->hasGroup($group)) {
-                throw new NonexistentGroupException($group);
+                throw new NonexistentGroupException(GroupKey::of($group));
             }
         }
     }

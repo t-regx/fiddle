@@ -1,13 +1,12 @@
 <?php
 namespace TRegx\CleanRegex\Exception;
 
-use TRegx\CleanRegex\Internal\Type;
+use TRegx\CleanRegex\Internal\Type\Type;
 
 class FluentMatchPatternException extends \Exception implements PatternException
 {
-    public static function forInvalidInteger($value): self
+    public static function forInvalidInteger(Type $type): self
     {
-        $type = Type::asString($value);
         return new self("Invalid data types passed to asInt() method. Expected integer|string, but $type given");
     }
 }

@@ -2,30 +2,24 @@
 namespace TRegx\CleanRegex\Match\Details\Group;
 
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
-use TRegx\CleanRegex\Internal\Factory\GroupExceptionFactory;
 use TRegx\CleanRegex\Internal\Factory\Optional\NotMatchedOptionalWorker;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupDetails;
+use TRegx\CleanRegex\Internal\Subject;
 
 class NotMatchedGroup implements Group
 {
+    /** @var Subject */
+    private $subject;
     /** @var GroupDetails */
     private $details;
-    /** @var GroupExceptionFactory */
-    private $exceptionFactory;
     /** @var NotMatchedOptionalWorker */
-    private $optionalWorker;
-    /** @var string */
-    private $subject;
+    private $worker;
 
-    public function __construct(GroupDetails $details,
-                                GroupExceptionFactory $exceptionFactory,
-                                NotMatchedOptionalWorker $optionalWorker,
-                                string $subject)
+    public function __construct(Subject $subject, GroupDetails $details, NotMatchedOptionalWorker $worker)
     {
-        $this->details = $details;
-        $this->exceptionFactory = $exceptionFactory;
-        $this->optionalWorker = $optionalWorker;
         $this->subject = $subject;
+        $this->details = $details;
+        $this->worker = $worker;
     }
 
     public function text(): string
@@ -43,19 +37,19 @@ class NotMatchedGroup implements Group
         throw $this->groupNotMatched('textByteLength');
     }
 
-    public function toInt(): int
+    public function toInt(int $base = null): int
     {
         throw $this->groupNotMatched('toInt');
     }
 
-    public function isInt(): bool
+    public function isInt(int $base = null): bool
     {
         throw $this->groupNotMatched('isInt');
     }
 
     protected function groupNotMatched(string $method): GroupNotMatchedException
     {
-        return $this->exceptionFactory->create($method);
+        return GroupNotMatchedException::forMethod($this->details->group(), $method);
     }
 
     public function matched(): bool
@@ -70,12 +64,12 @@ class NotMatchedGroup implements Group
 
     public function name(): ?string
     {
-        return $this->details->name;
+        return $this->details->name();
     }
 
     public function index(): int
     {
-        return $this->details->index;
+        return $this->details->index();
     }
 
     /**
@@ -83,7 +77,7 @@ class NotMatchedGroup implements Group
      */
     public function usedIdentifier()
     {
-        return $this->details->nameOrIndex;
+        return $this->details->nameOrIndex();
     }
 
     public function offset(): int
@@ -113,7 +107,7 @@ class NotMatchedGroup implements Group
 
     public function subject(): string
     {
-        return $this->subject;
+        return $this->subject->getSubject();
     }
 
     public function all(): array
@@ -128,11 +122,11 @@ class NotMatchedGroup implements Group
 
     public function orThrow(string $exceptionClassName = null): void
     {
-        throw $this->optionalWorker->orThrow($exceptionClassName ?? GroupNotMatchedException::class);
+        throw $this->worker->throwable($exceptionClassName);
     }
 
     public function orElse(callable $substituteProducer)
     {
-        return $this->optionalWorker->orElse($substituteProducer);
+        return $substituteProducer(...$this->worker->arguments());
     }
 }

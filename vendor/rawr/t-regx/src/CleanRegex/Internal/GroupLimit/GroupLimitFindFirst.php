@@ -4,18 +4,21 @@ namespace TRegx\CleanRegex\Internal\GroupLimit;
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
-use TRegx\CleanRegex\Internal\Exception\Messages\Group\FirstGroupMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\NotMatchedMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstGroupSubjectMessage;
 use TRegx\CleanRegex\Internal\Factory\Optional\NotMatchedOptionalWorker;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
+use TRegx\CleanRegex\Internal\GroupKey\PerformanceSignatures;
 use TRegx\CleanRegex\Internal\Match\Base\Base;
-use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFacade;
+use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFacadeMatched;
+use TRegx\CleanRegex\Internal\Match\Details\Group\Handle\FirstNamedGroup;
 use TRegx\CleanRegex\Internal\Match\Details\Group\MatchGroupFactoryStrategy;
 use TRegx\CleanRegex\Internal\Match\FindFirst\EmptyOptional;
-use TRegx\CleanRegex\Internal\Match\FindFirst\OptionalImpl;
-use TRegx\CleanRegex\Internal\Match\Groups\Strategy\MatchAllGroupVerifier;
+use TRegx\CleanRegex\Internal\Match\FindFirst\PresentOptional;
 use TRegx\CleanRegex\Internal\Match\MatchAll\LazyMatchAllFactory;
-use TRegx\CleanRegex\Internal\Model\LazyRawWithGroups;
+use TRegx\CleanRegex\Internal\Messages\Group\FirstGroupMessage;
+use TRegx\CleanRegex\Internal\Messages\NotMatchedMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\FirstGroupSubjectMessage;
+use TRegx\CleanRegex\Internal\Model\FalseNegative;
+use TRegx\CleanRegex\Internal\Model\GroupAware;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
 use TRegx\CleanRegex\Match\Details\NotMatched;
 use TRegx\CleanRegex\Match\Optional;
@@ -24,13 +27,16 @@ class GroupLimitFindFirst
 {
     /** @var Base */
     private $base;
-    /** @var string|int */
-    private $nameOrIndex;
+    /** @var GroupAware */
+    private $groupAware;
+    /** @var GroupKey */
+    private $group;
 
-    public function __construct(Base $base, $nameOrIndex)
+    public function __construct(Base $base, GroupAware $groupAware, GroupKey $group)
     {
         $this->base = $base;
-        $this->nameOrIndex = $nameOrIndex;
+        $this->groupAware = $groupAware;
+        $this->group = $group;
     }
 
     public function getOptionalForGroup(callable $consumer): Optional
@@ -39,37 +45,35 @@ class GroupLimitFindFirst
         if ($this->matched($first)) {
             return $this->matchedOptional($first, $consumer);
         }
-        if ($this->groupExists()) {
+        if ($this->groupAware->hasGroup($this->group->nameOrIndex())) {
             return $this->notMatchedOptional($first);
         }
-        throw new NonexistentGroupException($this->nameOrIndex);
+        throw new NonexistentGroupException($this->group);
     }
 
     private function matched(RawMatchOffset $first): bool
     {
-        return $first->hasGroup($this->nameOrIndex) && $first->getGroup($this->nameOrIndex) !== null;
+        return $first->hasGroup($this->group->nameOrIndex()) && $first->getGroup($this->group->nameOrIndex()) !== null;
     }
 
-    private function groupExists(): bool
+    private function matchedOptional(RawMatchOffset $match, callable $consumer): PresentOptional
     {
-        return (new MatchAllGroupVerifier($this->base->getPattern()))->groupExists($this->nameOrIndex);
-    }
-
-    private function matchedOptional(RawMatchOffset $match, callable $consumer): OptionalImpl
-    {
-        $facade = new GroupFacade($match, $this->base, $this->nameOrIndex,
+        $signatures = new PerformanceSignatures($match, $this->groupAware);
+        $facade = new GroupFacadeMatched($this->base,
             new MatchGroupFactoryStrategy(),
-            new LazyMatchAllFactory($this->base));
-
-        return new OptionalImpl($consumer($facade->createGroup($match)));
+            new LazyMatchAllFactory($this->base),
+            new FirstNamedGroup($signatures),
+            $signatures);
+        $false = new FalseNegative($match);
+        return new PresentOptional($consumer($facade->createGroup($this->group, $false, $false)));
     }
 
     private function notMatchedOptional(RawMatchOffset $first): EmptyOptional
     {
         if ($first->matched()) {
-            return $this->notMatched(GroupNotMatchedException::class, new FirstGroupMessage($this->nameOrIndex));
+            return $this->notMatched(GroupNotMatchedException::class, new FirstGroupMessage($this->group));
         }
-        return $this->notMatched(SubjectNotMatchedException::class, new FirstGroupSubjectMessage($this->nameOrIndex));
+        return $this->notMatched(SubjectNotMatchedException::class, new FirstGroupSubjectMessage($this->group));
     }
 
     private function notMatched(string $exception, NotMatchedMessage $message): EmptyOptional
@@ -77,7 +81,7 @@ class GroupLimitFindFirst
         return new EmptyOptional(new NotMatchedOptionalWorker(
             $message,
             $this->base,
-            new NotMatched(new LazyRawWithGroups($this->base), $this->base),
+            new NotMatched($this->groupAware, $this->base),
             $exception));
     }
 }

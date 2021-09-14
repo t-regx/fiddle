@@ -1,73 +1,79 @@
 <?php
 namespace TRegx\CleanRegex;
 
-use TRegx\CleanRegex\Exception\PatternMalformedPatternException;
-use TRegx\CleanRegex\Internal\Delimiter\TrailingBackslashException;
-use TRegx\CleanRegex\Internal\InternalPattern;
-use TRegx\CleanRegex\Internal\UnquotePattern;
+use TRegx\CleanRegex\ForArray\ForArrayPattern;
+use TRegx\CleanRegex\Internal\Definition;
+use TRegx\CleanRegex\Internal\EntryPoints;
+use TRegx\CleanRegex\Internal\Expression\Expression;
+use TRegx\CleanRegex\Internal\StringSubject;
+use TRegx\CleanRegex\Match\MatchPattern;
+use TRegx\CleanRegex\Replace\ReplaceLimit;
 use TRegx\SafeRegex\preg;
 
 class Pattern
 {
-    public static function of(string $pattern, string $flags = ''): PatternInterface
+    use EntryPoints;
+
+    /** @var Definition */
+    private $definition;
+
+    public function __construct(Expression $expression)
     {
-        try {
-            return new PatternImpl(InternalPattern::standard($pattern, $flags));
-        } catch (TrailingBackslashException $exception) {
-            throw new PatternMalformedPatternException('Pattern may not end with a trailing backslash');
-        }
+        $this->definition = $expression->definition();
     }
 
-    /**
-     * @param string $delimitedPattern
-     * @return PatternInterface
-     * Please use method \TRegx\CleanRegex\Pattern::of. Method Pattern::pcre() is only present, in case
-     * if there's an automatic delimiters' bug, that would make {@link Pattern::of()} error-prone.
-     * {@link Pattern::pcre()} is error-prone to MalformedPatternException, because of delimiters.
-     * @see \TRegx\CleanRegex\Pattern::of
-     */
-    public static function pcre(string $delimitedPattern): PatternInterface
+    public function test(string $subject): bool
     {
-        return new PatternImpl(InternalPattern::pcre($delimitedPattern));
+        return preg::match($this->definition->pattern, $subject) === 1;
     }
 
-    public static function prepare(array $input, string $flags = ''): PatternInterface
+    public function fails(string $subject): bool
     {
-        return PatternBuilder::builder()->prepare($input, $flags);
+        return preg::match($this->definition->pattern, $subject) === 0;
     }
 
-    public static function bind(string $input, array $values, string $flags = ''): PatternInterface
+    public function match(string $subject): MatchPattern
     {
-        return PatternBuilder::builder()->bind($input, $values, $flags);
+        return new MatchPattern($this->definition, new StringSubject($subject));
     }
 
-    public static function inject(string $input, array $values, string $flags = ''): PatternInterface
+    public function replace(string $subject): ReplaceLimit
     {
-        return PatternBuilder::builder()->inject($input, $values, $flags);
+        return new ReplaceLimit($this->definition, new StringSubject($subject));
     }
 
-    public static function compose(array $patterns): CompositePattern
+    public function prune(string $subject): string
     {
-        return PatternBuilder::compose($patterns);
+        return preg::replace($this->definition->pattern, '', $subject);
     }
 
-    public static function format(string $format, array $tokens, string $flags = ''): PatternInterface
+    public function forArray(array $haystack): ForArrayPattern
     {
-        return PatternBuilder::builder()->format($format, $tokens, $flags);
+        return new ForArrayPattern($this->definition, $haystack);
     }
 
-    public static function template(string $pattern, string $flags = ''): TemplatePattern
+    public function split(string $subject): array
     {
-        return PatternBuilder::builder()->template($pattern, $flags);
+        return preg::split($this->definition->pattern, $subject, -1, \PREG_SPLIT_DELIM_CAPTURE);
     }
 
-    public static function quote(string $string): string
+    public function count(string $subject): int
     {
-        return preg::quote($string);
+        return preg::match_all($this->definition->pattern, $subject);
     }
 
-    public static function unquote(string $quotedString): string
+    public function valid(): bool
     {
-        return (new UnquotePattern($quotedString))->unquote();
+        return $this->definition->valid();
+    }
+
+    public function delimited(): string
+    {
+        return $this->definition->pattern;
+    }
+
+    public function __toString(): string
+    {
+        return $this->definition->pattern;
     }
 }

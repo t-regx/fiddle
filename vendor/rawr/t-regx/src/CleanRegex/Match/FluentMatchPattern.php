@@ -4,31 +4,34 @@ namespace TRegx\CleanRegex\Match;
 use ArrayIterator;
 use InvalidArgumentException;
 use Iterator;
-use TRegx\CleanRegex\Internal\Exception\NoFirstStreamException;
-use TRegx\CleanRegex\Internal\Exception\UnmatchedStreamException;
 use TRegx\CleanRegex\Internal\Factory\Worker\StreamWorker;
 use TRegx\CleanRegex\Internal\Match\FindFirst\EmptyOptional;
-use TRegx\CleanRegex\Internal\Match\FindFirst\OptionalImpl;
+use TRegx\CleanRegex\Internal\Match\FindFirst\PresentOptional;
+use TRegx\CleanRegex\Internal\Match\FlatFunction;
 use TRegx\CleanRegex\Internal\Match\FlatMap\ArrayMergeStrategy;
 use TRegx\CleanRegex\Internal\Match\FlatMap\AssignStrategy;
-use TRegx\CleanRegex\Internal\Match\FluentInteger;
-use TRegx\CleanRegex\Internal\Match\FluentPredicate;
+use TRegx\CleanRegex\Internal\Match\GroupByFunction;
 use TRegx\CleanRegex\Internal\Match\Stream\ArrayOnlyStream;
+use TRegx\CleanRegex\Internal\Match\Stream\Base\UnmatchedStreamException;
+use TRegx\CleanRegex\Internal\Match\Stream\EmptyStreamException;
 use TRegx\CleanRegex\Internal\Match\Stream\FilterStream;
-use TRegx\CleanRegex\Internal\Match\Stream\FlatMappingStream;
+use TRegx\CleanRegex\Internal\Match\Stream\FlatMapStream;
 use TRegx\CleanRegex\Internal\Match\Stream\GroupByCallbackStream;
-use TRegx\CleanRegex\Internal\Match\Stream\KeysStream;
-use TRegx\CleanRegex\Internal\Match\Stream\MappingStream;
-use TRegx\CleanRegex\Internal\Match\Stream\Stream;
+use TRegx\CleanRegex\Internal\Match\Stream\IntegerStream;
+use TRegx\CleanRegex\Internal\Match\Stream\KeyStream;
+use TRegx\CleanRegex\Internal\Match\Stream\MapStream;
+use TRegx\CleanRegex\Internal\Match\Stream\Upstream;
+use TRegx\CleanRegex\Internal\Number;
+use TRegx\CleanRegex\Internal\Predicate;
 
 class FluentMatchPattern implements MatchPatternInterface
 {
-    /** @var Stream */
+    /** @var Upstream */
     private $stream;
     /** @var StreamWorker */
     private $worker;
 
-    public function __construct(Stream $stream, StreamWorker $worker)
+    public function __construct(Upstream $stream, StreamWorker $worker)
     {
         $this->stream = $stream;
         $this->worker = $worker;
@@ -69,10 +72,10 @@ class FluentMatchPattern implements MatchPatternInterface
             $firstElement = $this->stream->first();
         } catch (UnmatchedStreamException $exception) {
             return new EmptyOptional($this->worker->unmatchedFirst());
-        } catch (NoFirstStreamException $exception) {
+        } catch (EmptyStreamException $exception) {
             return new EmptyOptional($this->worker->noFirst());
         }
-        return new OptionalImpl($consumer($firstElement));
+        return new PresentOptional($consumer($firstElement));
     }
 
     public function nth(int $index)
@@ -93,7 +96,7 @@ class FluentMatchPattern implements MatchPatternInterface
         if (!\array_key_exists($index, $elements)) {
             return new EmptyOptional($this->worker->noNth($index, \count($elements)));
         }
-        return new OptionalImpl($elements[$index]);
+        return new PresentOptional($elements[$index]);
     }
 
     public function forEach(callable $consumer): void
@@ -119,17 +122,17 @@ class FluentMatchPattern implements MatchPatternInterface
 
     public function map(callable $mapper): FluentMatchPattern
     {
-        return $this->next(new MappingStream($this->stream, $mapper));
+        return $this->next(new MapStream($this->stream, $mapper));
     }
 
     public function flatMap(callable $mapper): FluentMatchPattern
     {
-        return $this->next(new FlatMappingStream($this->stream, new ArrayMergeStrategy(), $mapper, 'flatMap'));
+        return $this->next(new FlatMapStream($this->stream, new ArrayMergeStrategy(), new FlatFunction($mapper, 'flatMap')));
     }
 
     public function flatMapAssoc(callable $mapper): FluentMatchPattern
     {
-        return $this->next(new FlatMappingStream($this->stream, new AssignStrategy(), $mapper, 'flatMapAssoc'));
+        return $this->next(new FlatMapStream($this->stream, new AssignStrategy(), new FlatFunction($mapper, 'flatMapAssoc')));
     }
 
     public function distinct(): FluentMatchPattern
@@ -139,7 +142,7 @@ class FluentMatchPattern implements MatchPatternInterface
 
     public function filter(callable $predicate): FluentMatchPattern
     {
-        return $this->next(new FilterStream($this->stream, new FluentPredicate($predicate, 'filter')));
+        return $this->next(new FilterStream($this->stream, new Predicate($predicate, 'filter')));
     }
 
     public function values(): FluentMatchPattern
@@ -149,20 +152,20 @@ class FluentMatchPattern implements MatchPatternInterface
 
     public function keys(): FluentMatchPattern
     {
-        return $this->next(new KeysStream($this->stream));
+        return $this->next(new KeyStream($this->stream));
     }
 
-    public function asInt(): FluentMatchPattern
+    public function asInt(int $base = null): FluentMatchPattern
     {
-        return $this->map([FluentInteger::class, 'parse']);
+        return $this->next(new IntegerStream($this->stream, new Number\Base($base)));
     }
 
     public function groupByCallback(callable $groupMapper): FluentMatchPattern
     {
-        return $this->next(new GroupByCallbackStream($this->stream, $groupMapper));
+        return $this->next(new GroupByCallbackStream($this->stream, new GroupByFunction('groupByCallback', $groupMapper)));
     }
 
-    private function next(Stream $stream): FluentMatchPattern
+    private function next(Upstream $stream): FluentMatchPattern
     {
         return new FluentMatchPattern($stream, $this->worker->undecorateWorker());
     }

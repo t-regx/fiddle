@@ -4,48 +4,43 @@ namespace TRegx\CleanRegex\Internal\GroupLimit;
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Match\Base\Base;
-use TRegx\CleanRegex\Internal\Match\Groups\Strategy\GroupVerifier;
-use TRegx\CleanRegex\Internal\Match\Groups\Strategy\MatchAllGroupVerifier;
+use TRegx\CleanRegex\Internal\Model\GroupHasAware;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
 
 class GroupLimitFirst
 {
     /** @var Base */
     private $base;
-    /** @var string|int */
-    private $nameOrIndex;
-    /** @var GroupVerifier */
-    private $groupVerifier;
+    /** @var GroupHasAware */
+    private $groupAware;
+    /** @var GroupKey */
+    private $group;
 
-    public function __construct(Base $base, $nameOrIndex)
+    public function __construct(Base $base, GroupHasAware $groupAware, GroupKey $group)
     {
         $this->base = $base;
-        $this->nameOrIndex = $nameOrIndex;
-        $this->groupVerifier = new MatchAllGroupVerifier($this->base->getPattern());
+        $this->groupAware = $groupAware;
+        $this->group = $group;
     }
 
     public function getFirstForGroup(): RawMatchOffset
     {
         $rawMatch = $this->base->matchOffset();
-        if ($rawMatch->hasGroup($this->nameOrIndex)) {
-            $group = $rawMatch->getGroup($this->nameOrIndex);
+        if ($rawMatch->hasGroup($this->group->nameOrIndex())) {
+            $group = $rawMatch->getGroup($this->group->nameOrIndex());
             if ($group !== null) {
                 return $rawMatch;
             }
         } else {
-            if (!$this->groupExists()) {
-                throw new NonexistentGroupException($this->nameOrIndex);
+            if (!$this->groupAware->hasGroup($this->group->nameOrIndex())) {
+                throw new NonexistentGroupException($this->group);
             }
             if (!$rawMatch->matched()) {
-                throw SubjectNotMatchedException::forFirstGroup($this->base, $this->nameOrIndex);
+                throw SubjectNotMatchedException::forFirstGroup($this->base, $this->group);
             }
         }
-        throw GroupNotMatchedException::forFirst($this->base, $this->nameOrIndex);
-    }
-
-    private function groupExists(): bool
-    {
-        return $this->groupVerifier->groupExists($this->nameOrIndex);
+        throw GroupNotMatchedException::forFirst($this->group);
     }
 }

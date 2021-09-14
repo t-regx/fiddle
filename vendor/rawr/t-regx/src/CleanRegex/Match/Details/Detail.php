@@ -3,11 +3,11 @@ namespace TRegx\CleanRegex\Match\Details;
 
 use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Match\Details\Group\Group;
-use TRegx\CleanRegex\Match\Details\Group\ReplaceGroup;
 use TRegx\CleanRegex\Match\Details\Groups\IndexedGroups;
 use TRegx\CleanRegex\Match\Details\Groups\NamedGroups;
+use TRegx\CleanRegex\Replace\Details\Group\ReplaceGroup;
 
-interface Detail extends BaseDetail
+interface Detail extends BaseDetail, Intable
 {
     public function text(): string;
 
@@ -15,9 +15,9 @@ interface Detail extends BaseDetail
 
     public function textByteLength(): int;
 
-    public function toInt(): int;
+    public function toInt(int $base = null): int;
 
-    public function isInt(): bool;
+    public function isInt(int $base = null): bool;
 
     public function index(): int;
 

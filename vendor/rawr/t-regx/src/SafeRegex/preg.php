@@ -200,7 +200,7 @@ class preg
      *
      * @throws PregException
      */
-    public static function split(string $pattern, string $subject, int $limit = -1, int $flags = 0)
+    public static function split(string $pattern, string $subject, int $limit = -1, int $flags = 0): array
     {
         $pr = Bug::fix($pattern);
         return Guard::invoke('preg_split', $pr, static function () use ($pr, $subject, $limit, $flags) {
@@ -218,7 +218,7 @@ class preg
      */
     public static function grep(string $pattern, array $input, int $flags = 0): array
     {
-        $input = \array_filter($input, static function ($value) {
+        $input = \array_filter($input, static function ($value): bool {
             return !\is_object($value) || \method_exists($value, '__toString');
         });
         $pr = Bug::fix($pattern);
@@ -250,6 +250,21 @@ class preg
             return \str_replace('#', '\#', \preg_quote($string, $delimiter));
         }
         return \preg_quote($string, $delimiter);
+    }
+
+    public static function unquote(string $string): string
+    {
+        return self::unquoteStringWithCharacters($string, [
+            '.', '\\', '+', '*', '?', '[', ']', '^', '$', '(', ')',
+            '{', '}', '=', '!', '<', '>', '|', ':', '-', '#'
+        ]);
+    }
+
+    private static function unquoteStringWithCharacters(string $string, array $specialCharacters): string
+    {
+        return \strtr($string, \array_combine(\array_map(static function (string $char): string {
+            return "\\$char";
+        }, $specialCharacters), $specialCharacters));
     }
 
     /**

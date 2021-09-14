@@ -1,9 +1,11 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Replace\By\GroupMapper;
 
-use TRegx\CleanRegex\Internal\Exception\Messages\MissingReplacement\ForGroupMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\MissingReplacement\ForMatchMessage;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
+use TRegx\CleanRegex\Internal\Messages\MissingReplacement\ForGroupMessage;
+use TRegx\CleanRegex\Internal\Messages\MissingReplacement\ForMatchMessage;
 use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\LazySubjectRs;
+use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Detail;
 
 class SubstituteFallbackMapper implements DetailGroupMapper
@@ -12,10 +14,10 @@ class SubstituteFallbackMapper implements DetailGroupMapper
     private $mapper;
     /** @var LazySubjectRs */
     private $substitute;
-    /** @var string */
+    /** @var Subject */
     private $subject;
 
-    public function __construct(GroupMapper $mapper, LazySubjectRs $substitute, string $subject)
+    public function __construct(GroupMapper $mapper, LazySubjectRs $substitute, Subject $subject)
     {
         $this->mapper = $mapper;
         $this->substitute = $substitute;
@@ -31,10 +33,10 @@ class SubstituteFallbackMapper implements DetailGroupMapper
         return $result;
     }
 
-    public function useExceptionValues(string $occurrence, $nameOrIndex, string $match): void
+    public function useExceptionValues(string $occurrence, GroupKey $group, string $match): void
     {
-        $this->substitute->useExceptionMessage($nameOrIndex === 0
+        $this->substitute->useExceptionMessage($group->full()
             ? new ForMatchMessage($occurrence)
-            : new ForGroupMessage($match, $nameOrIndex, $occurrence));
+            : new ForGroupMessage($match, $group, $occurrence));
     }
 }

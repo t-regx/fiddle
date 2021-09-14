@@ -2,21 +2,24 @@
 namespace TRegx\CleanRegex\Internal\Model;
 
 use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
-use TRegx\CleanRegex\Internal\Model\Adapter\RawMatchesToMatchAdapter;
 use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
+use TRegx\CleanRegex\Internal\Model\Match\UsedForGroup;
 
 class GroupPolyfillDecorator implements IRawMatchOffset
 {
+    /** @var FalseNegative */
+    private $falseMatch;
     /** @var IRawMatchOffset */
-    private $match;
+    private $trueMatch;
     /** @var MatchAllFactory */
     private $allFactory;
     /** @var int */
     private $newMatchIndex;
 
-    public function __construct(IRawMatchOffset $match, MatchAllFactory $allFactory, int $newMatchIndex)
+    public function __construct(FalseNegative $match, MatchAllFactory $allFactory, int $newMatchIndex)
     {
-        $this->match = $match;
+        $this->falseMatch = $match;
+        $this->trueMatch = null;
         $this->allFactory = $allFactory;
         $this->newMatchIndex = $newMatchIndex;
     }
@@ -27,43 +30,36 @@ class GroupPolyfillDecorator implements IRawMatchOffset
      */
     public function hasGroup($nameOrIndex): bool
     {
-        if ($this->match->hasGroup($nameOrIndex)) {
-            return true;
+        if ($this->falseMatch->maybeGroupIsMissing($nameOrIndex)) {
+            return $this->trueMatch()->hasGroup($nameOrIndex);
         }
-        $this->polyfillGroups();
-        return $this->match->hasGroup($nameOrIndex);
+        return true;
     }
 
-    public function matched(): bool
+    public function text(): string
     {
-        return $this->match->matched();
-    }
-
-    public function getText(): string
-    {
-        return $this->match->getText();
+        return $this->falseMatch->text();
     }
 
     public function isGroupMatched($nameOrIndex): bool
     {
-        if (!$this->match->hasGroup($nameOrIndex)) {
-            $this->polyfillGroups();
+        if ($this->falseMatch->maybeGroupIsMissing($nameOrIndex)) {
+            return $this->trueMatch()->isGroupMatched($nameOrIndex);
         }
-        return $this->match->isGroupMatched($nameOrIndex);
+        return $this->falseMatch->isGroupMatched($nameOrIndex);
     }
 
     public function getGroup($nameOrIndex): ?string
     {
-        if ($this->match->hasGroup($nameOrIndex)) {
-            return $this->read($nameOrIndex);
+        if ($this->falseMatch->maybeGroupIsMissing($nameOrIndex)) {
+            return $this->read($this->trueMatch(), $nameOrIndex);
         }
-        $this->polyfillGroups();
-        return $this->read($nameOrIndex);
+        return $this->read($this->falseMatch, $nameOrIndex);
     }
 
-    private function read($nameOrIndex): ?string
+    private function read(UsedForGroup $forGroup, $nameOrIndex): ?string
     {
-        [$text, $offset] = $this->match->getGroupTextAndOffset($nameOrIndex);
+        [$text, $offset] = $forGroup->getGroupTextAndOffset($nameOrIndex);
         if ($offset === -1) {
             return null;
         }
@@ -72,49 +68,37 @@ class GroupPolyfillDecorator implements IRawMatchOffset
 
     public function getGroupTextAndOffset($nameOrIndex): array
     {
-        if (!$this->match->hasGroup($nameOrIndex)) {
-            $this->polyfillGroups();
+        if ($this->falseMatch->maybeGroupIsMissing($nameOrIndex)) {
+            return $this->trueMatch()->getGroupTextAndOffset($nameOrIndex);
         }
-        return $this->match->getGroupTextAndOffset($nameOrIndex);
+        return $this->falseMatch->getGroupTextAndOffset($nameOrIndex);
     }
 
     public function byteOffset(): int
     {
-        return $this->match->byteOffset();
+        return $this->falseMatch->byteOffset();
     }
 
-    /**
-     * @return (string|null)[]
-     */
     public function getGroupsTexts(): array
     {
-        $this->polyfillGroups();
-        return $this->match->getGroupsTexts();
+        return $this->trueMatch()->getGroupsTexts();
     }
 
-    /**
-     * @return (int|null)[]
-     */
     public function getGroupsOffsets(): array
     {
-        $this->polyfillGroups();
-        return $this->match->getGroupsOffsets();
+        return $this->trueMatch()->getGroupsOffsets();
     }
 
-    /**
-     * @return (string|int)[]
-     */
     public function getGroupKeys(): array
     {
-        $this->polyfillGroups();
-        return $this->match->getGroupKeys();
+        return $this->trueMatch()->getGroupKeys();
     }
 
-    private function polyfillGroups(): void
+    private function trueMatch(): IRawMatchOffset
     {
-        if ($this->match instanceof RawMatchesToMatchAdapter) {
-            return;
+        if ($this->trueMatch === null) {
+            $this->trueMatch = new RawMatchesToMatchAdapter($this->allFactory->getRawMatches(), $this->newMatchIndex);
         }
-        $this->match = new RawMatchesToMatchAdapter($this->allFactory->getRawMatches(), $this->newMatchIndex);
+        return $this->trueMatch;
     }
 }

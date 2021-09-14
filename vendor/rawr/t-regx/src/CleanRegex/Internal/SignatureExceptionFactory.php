@@ -6,7 +6,7 @@ use Error;
 use Throwable;
 use TRegx\CleanRegex\Exception\ClassExpectedException;
 use TRegx\CleanRegex\Exception\NoSuitableConstructorException;
-use TRegx\CleanRegex\Internal\Exception\Messages\NotMatchedMessage;
+use TRegx\CleanRegex\Internal\Messages\NotMatchedMessage;
 use TypeError;
 
 class SignatureExceptionFactory
@@ -19,9 +19,9 @@ class SignatureExceptionFactory
         $this->message = $message;
     }
 
-    public function create(string $className, string $subjectable): Throwable
+    public function create(string $className, Subject $subject): Throwable
     {
-        return $this->createWithSignatures($className, [$subjectable]);
+        return $this->createWithSignatures($className, [$subject->getSubject()]);
     }
 
     public function createWithoutSubject(string $className): Throwable

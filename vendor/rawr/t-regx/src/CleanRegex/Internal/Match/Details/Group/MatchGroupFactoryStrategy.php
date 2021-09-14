@@ -1,24 +1,20 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Details\Group;
 
-use TRegx\CleanRegex\Internal\Factory\GroupExceptionFactory;
 use TRegx\CleanRegex\Internal\Factory\Optional\NotMatchedOptionalWorker;
-use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
+use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Group\MatchedGroup;
 use TRegx\CleanRegex\Match\Details\Group\NotMatchedGroup;
 
 class MatchGroupFactoryStrategy implements GroupFactoryStrategy
 {
-    public function createMatched(IRawMatchOffset $match, GroupDetails $details, MatchedGroupOccurrence $matchedDetails): MatchedGroup
+    public function matched(Subject $subject, GroupDetails $details, GroupEntry $entry, SubstitutedGroup $substituted): MatchedGroup
     {
-        return new MatchedGroup($match, $details, $matchedDetails);
+        return new MatchedGroup($subject, $details, $entry, $substituted);
     }
 
-    public function createUnmatched(GroupDetails $details,
-                                    GroupExceptionFactory $exceptionFactory,
-                                    NotMatchedOptionalWorker $optionalFactory,
-                                    string $subject): NotMatchedGroup
+    public function notMatched(Subject $subject, GroupDetails $details, NotMatchedOptionalWorker $worker): NotMatchedGroup
     {
-        return new NotMatchedGroup($details, $exceptionFactory, $optionalFactory, $subject);
+        return new NotMatchedGroup($subject, $details, $worker);
     }
 }

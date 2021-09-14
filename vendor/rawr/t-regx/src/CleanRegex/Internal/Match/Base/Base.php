@@ -1,17 +1,17 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Base;
 
-use TRegx\CleanRegex\Internal\InternalPattern;
+use TRegx\CleanRegex\Internal\Definition;
 use TRegx\CleanRegex\Internal\Match\UserData;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatch;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatches;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatchesOffset;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
-use TRegx\CleanRegex\Internal\Model\Matches\RawMatches;
-use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
-use TRegx\CleanRegex\Internal\Subjectable;
+use TRegx\CleanRegex\Internal\Subject;
 
-interface Base extends Subjectable
+interface Base extends Subject
 {
-    public function getPattern(): InternalPattern;
+    public function getPattern(): Definition;
 
     public function match(): RawMatch;
 
@@ -22,6 +22,4 @@ interface Base extends Subjectable
     public function matchAllOffsets(): RawMatchesOffset;
 
     public function getUserData(): UserData;
-
-    public function getUnfilteredBase(): Base;
 }

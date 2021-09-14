@@ -1,16 +1,16 @@
 <?php
 namespace TRegx\CleanRegex\Exception;
 
-use TRegx\CleanRegex\Internal\Exception\Messages\NotMatchedMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstGroupOffsetMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstGroupSubjectMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstMatchMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstMatchOffsetMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstTripleSubjectMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\FirstTupleSubjectMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\NthGroupMessage;
-use TRegx\CleanRegex\Internal\Exception\Messages\Subject\NthMatchMessage;
-use TRegx\CleanRegex\Internal\Subjectable;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
+use TRegx\CleanRegex\Internal\Messages\NotMatchedMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\FirstGroupOffsetSubjectMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\FirstGroupSubjectMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\FirstMatchMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\FirstTripleSubjectMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\FirstTupleSubjectMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\NthGroupMessage;
+use TRegx\CleanRegex\Internal\Messages\Subject\NthMatchMessage;
+use TRegx\CleanRegex\Internal\Subject;
 
 class SubjectNotMatchedException extends \Exception implements PatternException
 {
@@ -23,48 +23,43 @@ class SubjectNotMatchedException extends \Exception implements PatternException
         $this->subject = $subject;
     }
 
-    public static function forFirst(Subjectable $subjectable): self
+    public static function forFirst(Subject $subject): self
     {
-        return self::withMessage(new FirstMatchMessage(), $subjectable);
+        return self::withMessage(new FirstMatchMessage(), $subject);
     }
 
-    public static function forNth(Subjectable $subjectable, int $index): self
+    public static function forNth(Subject $subject, int $index): self
     {
-        return self::withMessage(new NthMatchMessage($index), $subjectable);
+        return self::withMessage(new NthMatchMessage($index), $subject);
     }
 
-    public static function forNthGroup(Subjectable $subjectable, $group, int $index): self
+    public static function forNthGroup(Subject $subject, GroupKey $group, int $index): self
     {
-        return self::withMessage(new NthGroupMessage($group, $index), $subjectable);
+        return self::withMessage(new NthGroupMessage($group, $index), $subject);
     }
 
-    public static function forFirstOffset(Subjectable $subjectable): self
+    public static function forFirstGroupOffset(Subject $subject, GroupKey $group): self
     {
-        return self::withMessage(new FirstMatchOffsetMessage(), $subjectable);
+        return self::withMessage(new FirstGroupOffsetSubjectMessage($group), $subject);
     }
 
-    public static function forFirstGroupOffset(Subjectable $subjectable, $group): self
+    public static function forFirstGroup(Subject $subject, GroupKey $group): self
     {
-        return self::withMessage(new FirstGroupOffsetMessage($group), $subjectable);
+        return self::withMessage(new FirstGroupSubjectMessage($group), $subject);
     }
 
-    public static function forFirstGroup(Subjectable $subjectable, $group): self
+    public static function forFirstTuple(Subject $subject, GroupKey $group1, GroupKey $group2): self
     {
-        return self::withMessage(new FirstGroupSubjectMessage($group), $subjectable);
+        throw SubjectNotMatchedException::withMessage(new FirstTupleSubjectMessage($group1, $group2), $subject);
     }
 
-    public static function forFirstTuple(Subjectable $subjectable, $group1, $group2): self
+    public static function forFirstTriple(Subject $subject, GroupKey $group1, GroupKey $group2, GroupKey $group3): self
     {
-        throw SubjectNotMatchedException::withMessage(new FirstTupleSubjectMessage($group1, $group2), $subjectable);
+        throw SubjectNotMatchedException::withMessage(new FirstTripleSubjectMessage($group1, $group2, $group3), $subject);
     }
 
-    public static function forFirstTriple(Subjectable $subjectable, $group1, $group2, $group3): self
+    public static function withMessage(NotMatchedMessage $message, Subject $subject): self
     {
-        throw SubjectNotMatchedException::withMessage(new FirstTripleSubjectMessage($group1, $group2, $group3), $subjectable);
-    }
-
-    public static function withMessage(NotMatchedMessage $message, Subjectable $subjectable): self
-    {
-        return new SubjectNotMatchedException($message->getMessage(), $subjectable->getSubject());
+        return new SubjectNotMatchedException($message->getMessage(), $subject->getSubject());
     }
 }

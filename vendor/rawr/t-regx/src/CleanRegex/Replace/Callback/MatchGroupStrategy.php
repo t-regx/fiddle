@@ -1,21 +1,22 @@
 <?php
 namespace TRegx\CleanRegex\Replace\Callback;
 
-use TRegx\CleanRegex\Match\Details\Group\ReplaceGroup;
-use TRegx\CleanRegex\Match\Details\ReplaceDetail;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
+use TRegx\CleanRegex\Replace\Details\Group\ReplaceGroup;
+use TRegx\CleanRegex\Replace\Details\ReplaceDetail;
 
 class MatchGroupStrategy implements ReplaceCallbackArgumentStrategy
 {
-    /** @var string|int */
-    private $nameOrIndex;
+    /** @var GroupKey */
+    private $group;
 
-    public function __construct($nameOrIndex)
+    public function __construct(GroupKey $group)
     {
-        $this->nameOrIndex = $nameOrIndex;
+        $this->group = $group;
     }
 
     public function mapArgument(ReplaceDetail $detail): ReplaceGroup
     {
-        return $detail->group($this->nameOrIndex);
+        return $detail->group($this->group->nameOrIndex());
     }
 }

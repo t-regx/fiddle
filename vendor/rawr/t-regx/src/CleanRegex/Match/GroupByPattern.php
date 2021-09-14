@@ -1,80 +1,110 @@
 <?php
 namespace TRegx\CleanRegex\Match;
 
+use TRegx\CleanRegex\Exception\InvalidReturnValueException;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Match\Base\Base;
 use TRegx\CleanRegex\Internal\Match\FlatMap\ArrayMergeStrategy;
 use TRegx\CleanRegex\Internal\Match\FlatMap\AssignStrategy;
-use TRegx\CleanRegex\Internal\Match\GroupBy\FlatMapStrategy;
-use TRegx\CleanRegex\Internal\Match\GroupBy\MapStrategy;
-use TRegx\CleanRegex\Internal\Match\GroupBy\OffsetsStrategy;
-use TRegx\CleanRegex\Internal\Match\GroupBy\Strategy;
-use TRegx\CleanRegex\Internal\Match\GroupBy\TextsStrategy;
-use TRegx\CleanRegex\Internal\Model\DetailObjectFactory;
-use TRegx\CleanRegex\Internal\Model\Matches\RawMatchesOffset;
+use TRegx\CleanRegex\Internal\Match\FlatMap\FlatMapStrategy;
+use TRegx\CleanRegex\Internal\Match\MatchAll\EagerMatchAllFactory;
+use TRegx\CleanRegex\Internal\Model\Match\RawMatchesOffset;
+use TRegx\CleanRegex\Internal\Model\RawMatchesToMatchAdapter;
+use TRegx\CleanRegex\Internal\Nested;
+use TRegx\CleanRegex\Internal\NonNestedValueException;
+use TRegx\CleanRegex\Internal\Offset\ByteOffset;
+use TRegx\CleanRegex\Match\Details\MatchDetail;
+use TRegx\SafeRegex\Internal\Tuple;
 
 class GroupByPattern
 {
     /** * @var Base */
     private $base;
-    /** * @var string|int */
-    private $nameOrIndex;
+    /** * @var GroupKey */
+    private $group;
 
-    public function __construct(Base $base, $nameOrIndex)
+    public function __construct(Base $base, GroupKey $group)
     {
         $this->base = $base;
-        $this->nameOrIndex = $nameOrIndex;
+        $this->group = $group;
     }
 
     public function all(): array
     {
-        return $this->groupBy(new TextsStrategy());
+        return $this->groupBySimple(static function (RawMatchesOffset $matches, int $index): string {
+            return $matches->getTexts()[$index];
+        });
     }
 
     public function offsets(): array
     {
-        return $this->groupBy(new OffsetsStrategy($this->base, true));
+        return $this->groupBySimple(function (RawMatchesOffset $matches, int $index): int {
+            $offset = Tuple::second($matches->getGroupTextAndOffset(0, $index));
+            return ByteOffset::toCharacterOffset($this->base->getSubject(), $offset);
+        });
     }
 
     public function byteOffsets(): array
     {
-        return $this->groupBy(new OffsetsStrategy(null, false));
+        return $this->groupBySimple(static function (RawMatchesOffset $matches, int $index): int {
+            return Tuple::second($matches->getGroupTextAndOffset(0, $index));
+        });
     }
 
     public function map(callable $mapper): array
     {
-        return $this->groupBy(new MapStrategy($mapper, $this->factory()));
+        return $this->groupBySimple(function (RawMatchesOffset $matches, int $index) use ($mapper) {
+            return $mapper($this->detail($matches, $index));
+        });
+    }
+
+    private function groupBySimple(callable $groupMapper): array
+    {
+        $matches = $this->base->matchAllOffsets();
+        $map = [];
+        foreach ($matches->getIndexes() as $index) {
+            if ($matches->isGroupMatched($this->group->nameOrIndex(), $index)) {
+                $key = Tuple::first($matches->getGroupTextAndOffset($this->group->nameOrIndex(), $index));
+                $map[$key][] = $groupMapper($matches, $index);
+            }
+        }
+        return $map;
     }
 
     public function flatMap(callable $mapper): array
     {
-        return $this->groupBy(new FlatMapStrategy($mapper, new ArrayMergeStrategy(), $this->factory(), 'flatMap'));
+        try {
+            return $this->flattenMap($this->map($mapper), new ArrayMergeStrategy());
+        } catch (NonNestedValueException $exception) {
+            throw new InvalidReturnValueException('flatMap', 'array', $exception->getType());
+        }
     }
 
     public function flatMapAssoc(callable $mapper): array
     {
-        return $this->groupBy(new FlatMapStrategy($mapper, new AssignStrategy(), $this->factory(), 'flatMapAssoc'));
-    }
-
-    private function factory(): DetailObjectFactory
-    {
-        return new DetailObjectFactory($this->base, -1, $this->base->getUserData());
-    }
-
-    private function groupBy(Strategy $strategy): array
-    {
-        $matches = $this->base->matchAllOffsets();
-        return $strategy->transform($this->groupMatches($matches), $matches);
-    }
-
-    private function groupMatches(RawMatchesOffset $matches): array
-    {
-        $map = [];
-        foreach ($matches->getIndexes() as $index) {
-            if ($matches->isGroupMatched($this->nameOrIndex, $index)) {
-                $key = $matches->getGroupTextAndOffset($this->nameOrIndex, $index)[0];
-                $map[$key][] = $matches->getRawMatchOffset($index);
-            }
+        try {
+            return $this->flattenMap($this->map($mapper), new AssignStrategy());
+        } catch (NonNestedValueException $exception) {
+            throw new InvalidReturnValueException('flatMapAssoc', 'array', $exception->getType());
         }
-        return $map;
+    }
+
+    private function flattenMap(array $groupped, FlatMapStrategy $strategy): array
+    {
+        $flattened = [];
+        foreach ($groupped as $groupKey => $grouppedValues) {
+            $flattened[$groupKey] = $strategy->flatten(new Nested($grouppedValues));
+        }
+        return $flattened;
+    }
+
+    private function detail(RawMatchesOffset $matches, int $index): MatchDetail
+    {
+        return MatchDetail::create($this->base,
+            $index,
+            -1,
+            new RawMatchesToMatchAdapter($matches, $index),
+            new EagerMatchAllFactory($matches),
+            $this->base->getUserData());
     }
 }
