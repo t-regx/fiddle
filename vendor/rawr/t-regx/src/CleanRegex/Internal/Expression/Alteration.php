@@ -3,8 +3,9 @@ namespace TRegx\CleanRegex\Internal\Expression;
 
 use TRegx\CleanRegex\Internal\Delimiter\Delimiter;
 use TRegx\CleanRegex\Internal\Flags;
-use TRegx\CleanRegex\Internal\Prepared\Word\AlternationWord;
-use TRegx\CleanRegex\Internal\Prepared\Word\Word;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\Phrase;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\UnconjugatedPharse;
+use TRegx\CleanRegex\Internal\Prepared\Word\AlterationWord;
 
 class Alteration implements Expression
 {
@@ -21,9 +22,9 @@ class Alteration implements Expression
         $this->flags = new Flags($flags);
     }
 
-    protected function word(): Word
+    protected function phrase(): Phrase
     {
-        return new AlternationWord($this->texts);
+        return new UnconjugatedPharse(new AlterationWord($this->texts));
     }
 
     protected function delimiter(): Delimiter

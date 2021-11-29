@@ -23,10 +23,12 @@ class QuoteConsumer implements Consumer
         $quoteEnd = $feed->string('\E');
         while (!$feed->empty()) {
             if ($quoteEnd->consumable()) {
-                $quoteEnd->consume();
+                $quoteEnd->commit();
                 return new Quote($quote, true);
             }
-            $quote .= $feed->letter()->consume();
+            $letter = $feed->letter();
+            $quote .= $letter->asString();
+            $letter->commit();
         }
         return new Quote($quote, false);
     }

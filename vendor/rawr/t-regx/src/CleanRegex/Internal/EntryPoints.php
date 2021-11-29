@@ -1,13 +1,14 @@
 <?php
 namespace TRegx\CleanRegex\Internal;
 
+use TRegx\CleanRegex\Builder\PatternTemplate;
 use TRegx\CleanRegex\Builder\PcreBuilder;
 use TRegx\CleanRegex\Builder\TemplateBuilder;
 use TRegx\CleanRegex\Composite\CompositePattern;
 use TRegx\CleanRegex\Internal\Expression\Alteration;
 use TRegx\CleanRegex\Internal\Expression\Literal;
-use TRegx\CleanRegex\Internal\Expression\Standard;
 use TRegx\CleanRegex\Internal\Prepared\Expression\Mask;
+use TRegx\CleanRegex\Internal\Prepared\Expression\Standard;
 use TRegx\CleanRegex\Internal\Prepared\Expression\Template;
 use TRegx\CleanRegex\Internal\Prepared\Figure\InjectFigures;
 use TRegx\CleanRegex\Internal\Prepared\Orthography\StandardOrthography;
@@ -19,7 +20,7 @@ trait EntryPoints
 {
     public static function of(string $pattern, string $flags = null): Pattern
     {
-        return new Pattern(new Standard($pattern, $flags ?? ''));
+        return new Pattern(new Standard(new StandardSpelling($pattern, $flags ?? '', new UnsuitableStringCondition($pattern))));
     }
 
     public static function inject(string $pattern, array $texts, string $flags = null): Pattern
@@ -32,7 +33,12 @@ trait EntryPoints
         return new Pattern(new Mask($mask, $keywords, $flags ?? ''));
     }
 
-    public static function template(string $pattern, string $flags = null): TemplateBuilder
+    public static function template(string $pattern, string $flags = null): PatternTemplate
+    {
+        return new PatternTemplate(new StandardOrthography($pattern, $flags ?? ''));
+    }
+
+    public static function builder(string $pattern, string $flags = null): TemplateBuilder
     {
         return new TemplateBuilder(new StandardOrthography($pattern, $flags ?? ''), new Tokens([]));
     }
@@ -83,7 +89,7 @@ trait EntryPoints
              * {@see Pattern}, so it has access to its private fields. That's why we can just
              * pass a closure, which can map {@see Pattern} to {@see Definition}.
              */
-            return $pattern->definition;
+            return $pattern->predefinition->definition();
         }));
     }
 }

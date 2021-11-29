@@ -4,7 +4,7 @@ namespace TRegx\CleanRegex\Internal\Prepared\Parser\Feed;
 use TRegx\CleanRegex\Internal\Prepared\Parser\Consumer\Condition;
 use TRegx\CleanRegex\Internal\Prepared\Parser\EntitySequence;
 
-class ConstantString implements Condition
+class ConstantString implements Condition, StringCondition
 {
     /** @var ShiftString */
     private $shiftString;
@@ -22,11 +22,6 @@ class ConstantString implements Condition
         return $this->shiftString->startsWith($this->string);
     }
 
-    public function consume(): void
-    {
-        $this->shiftString->shift($this->string);
-    }
-
     public function met(EntitySequence $entities): bool
     {
         return $this->consumable();
@@ -34,6 +29,11 @@ class ConstantString implements Condition
 
     public function commit(): void
     {
-        $this->consume();
+        $this->shiftString->shift($this->string);
+    }
+
+    public function asString(): string
+    {
+        return $this->string;
     }
 }

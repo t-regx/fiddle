@@ -2,21 +2,18 @@
 namespace TRegx\CleanRegex\Internal\Prepared\Expression;
 
 use TRegx\CleanRegex\Exception\ExplicitDelimiterRequiredException;
-use TRegx\CleanRegex\Exception\PatternMalformedPatternException;
 use TRegx\CleanRegex\Internal\Delimiter\Delimiter;
-use TRegx\CleanRegex\Internal\Delimiter\TrailingBackslashException;
 use TRegx\CleanRegex\Internal\Delimiter\UndelimiterablePatternException;
 use TRegx\CleanRegex\Internal\Expression\Expression;
-use TRegx\CleanRegex\Internal\Expression\StrictInterpretation;
 use TRegx\CleanRegex\Internal\Flags;
 use TRegx\CleanRegex\Internal\Prepared\Dictionary;
 use TRegx\CleanRegex\Internal\Prepared\Figure\CountedFigures;
 use TRegx\CleanRegex\Internal\Prepared\Orthography\Spelling;
-use TRegx\CleanRegex\Internal\Prepared\Word\Word;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\Phrase;
 
 class Template implements Expression
 {
-    use StrictInterpretation;
+    use PredefinedExpression;
 
     /** @var Spelling */
     private $spelling;
@@ -29,13 +26,9 @@ class Template implements Expression
         $this->dictionary = new Dictionary($spelling, $figures);
     }
 
-    protected function word(): Word
+    protected function phrase(): Phrase
     {
-        try {
-            return $this->dictionary->compositeWord();
-        } catch (TrailingBackslashException $exception) {
-            throw new PatternMalformedPatternException('Pattern may not end with a trailing backslash');
-        }
+        return $this->dictionary->compositePhrase();
     }
 
     protected function delimiter(): Delimiter

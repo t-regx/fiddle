@@ -1,7 +1,6 @@
 <?php
 namespace TRegx\CleanRegex\Replace;
 
-use TRegx\CleanRegex\Exception\MissingReplacementKeyException;
 use TRegx\CleanRegex\Internal\Definition;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Match\Base\ApiBase;
@@ -14,7 +13,6 @@ use TRegx\CleanRegex\Internal\Replace\By\PerformanceEmptyGroupReplace;
 use TRegx\CleanRegex\Internal\Replace\Counting\CountingStrategy;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Replace\By\ByReplacePattern;
-use TRegx\CleanRegex\Replace\By\ByReplacePatternImpl;
 use TRegx\CleanRegex\Replace\Callback\MatchStrategy;
 use TRegx\CleanRegex\Replace\Callback\ReplacePatternCallbackInvoker;
 use TRegx\SafeRegex\preg;
@@ -67,7 +65,7 @@ class SpecificReplacePatternImpl implements SpecificReplacePattern, CompositeRep
 
     public function by(): ByReplacePattern
     {
-        return new ByReplacePatternImpl(
+        return new ByReplacePattern(
             new GroupFallbackReplacer(
                 $this->definition,
                 $this->subject,
@@ -75,7 +73,7 @@ class SpecificReplacePatternImpl implements SpecificReplacePattern, CompositeRep
                 $this->substitute,
                 $this->countingStrategy,
                 new ApiBase($this->definition, $this->subject, new UserData())),
-            new LazyMessageThrowStrategy(MissingReplacementKeyException::class),
+            new LazyMessageThrowStrategy(),
             new PerformanceEmptyGroupReplace($this->definition, $this->subject, $this->limit),
             $this->invoker,
             $this->subject,

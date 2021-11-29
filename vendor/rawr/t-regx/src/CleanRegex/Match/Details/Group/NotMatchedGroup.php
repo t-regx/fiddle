@@ -2,9 +2,12 @@
 namespace TRegx\CleanRegex\Match\Details\Group;
 
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
-use TRegx\CleanRegex\Internal\Factory\Optional\NotMatchedOptionalWorker;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupDetails;
+use TRegx\CleanRegex\Internal\Match\Rejection;
+use TRegx\CleanRegex\Internal\Message\GroupMessage;
 use TRegx\CleanRegex\Internal\Subject;
+use TRegx\CleanRegex\Match\Details\NotMatched;
+use TRegx\CleanRegex\Match\Optional;
 
 class NotMatchedGroup implements Group
 {
@@ -12,14 +15,17 @@ class NotMatchedGroup implements Group
     private $subject;
     /** @var GroupDetails */
     private $details;
-    /** @var NotMatchedOptionalWorker */
-    private $worker;
+    /** @var NotMatched */
+    private $notMatched;
+    /** @var Rejection */
+    private $rejection;
 
-    public function __construct(Subject $subject, GroupDetails $details, NotMatchedOptionalWorker $worker)
+    public function __construct(Subject $subject, GroupDetails $details, NotMatched $notMatched)
     {
         $this->subject = $subject;
         $this->details = $details;
-        $this->worker = $worker;
+        $this->notMatched = $notMatched;
+        $this->rejection = new Rejection($subject, GroupNotMatchedException::class, new GroupMessage($this->details->group()));
     }
 
     public function text(): string
@@ -122,11 +128,16 @@ class NotMatchedGroup implements Group
 
     public function orThrow(string $exceptionClassName = null): void
     {
-        throw $this->worker->throwable($exceptionClassName);
+        $this->rejection->throw($exceptionClassName);
     }
 
     public function orElse(callable $substituteProducer)
     {
-        return $substituteProducer(...$this->worker->arguments());
+        return $substituteProducer($this->notMatched);
+    }
+
+    public function map(callable $mapper): Optional
+    {
+        return $this;
     }
 }

@@ -27,7 +27,7 @@ class DictionaryMapper implements GroupMapper
     private function validateMap(array $map): void
     {
         foreach ($map as $occurrence => $replacement) {
-            if (!\is_string($occurrence)) {
+            if (!(\is_string($occurrence) || \is_int($occurrence))) {
                 throw InvalidArgument::typeGiven("Invalid replacement map key. Expected string", new ValueType($occurrence));
             }
             if (!\is_string($replacement)) {

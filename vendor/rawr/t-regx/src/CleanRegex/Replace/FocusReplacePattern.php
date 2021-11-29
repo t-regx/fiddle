@@ -2,7 +2,6 @@
 namespace TRegx\CleanRegex\Replace;
 
 use TRegx\CleanRegex\Exception\FocusGroupNotMatchedException;
-use TRegx\CleanRegex\Exception\MissingReplacementKeyException;
 use TRegx\CleanRegex\Internal\Definition;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Match\Base\ApiBase;
@@ -17,7 +16,6 @@ use TRegx\CleanRegex\Internal\Replace\ReferencesReplacer;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Replace\By\ByReplacePattern;
-use TRegx\CleanRegex\Replace\By\ByReplacePatternImpl;
 use TRegx\CleanRegex\Replace\Callback\ReplacePatternCallbackInvoker;
 
 class FocusReplacePattern implements SpecificReplacePattern
@@ -85,7 +83,7 @@ class FocusReplacePattern implements SpecificReplacePattern
 
     public function by(): ByReplacePattern
     {
-        return new ByReplacePatternImpl(
+        return new ByReplacePattern(
             new GroupFallbackReplacer(
                 $this->definition,
                 $this->subject,
@@ -93,7 +91,7 @@ class FocusReplacePattern implements SpecificReplacePattern
                 new DefaultStrategy(),
                 $this->countingStrategy,
                 new ApiBase($this->definition, $this->subject, new UserData())),
-            new LazyMessageThrowStrategy(MissingReplacementKeyException::class),
+            new LazyMessageThrowStrategy(),
             new PerformanceEmptyGroupReplace($this->definition, $this->subject, $this->limit),
             new ReplacePatternCallbackInvoker($this->definition, $this->subject, $this->limit, new DefaultStrategy(), $this->countingStrategy),
             $this->subject,

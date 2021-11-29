@@ -1,34 +1,27 @@
 <?php
 namespace TRegx\CleanRegex\Match;
 
-use ArrayIterator;
-use InvalidArgumentException;
-use Iterator;
 use TRegx\CleanRegex\Exception\NoSuchNthElementException;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
-use TRegx\CleanRegex\Internal\Factory\Optional\NotMatchedOptionalWorker;
-use TRegx\CleanRegex\Internal\Factory\Worker\AsIntStreamWorker;
-use TRegx\CleanRegex\Internal\Factory\Worker\MatchStreamWorker;
-use TRegx\CleanRegex\Internal\Factory\Worker\NextStreamWorkerDecorator;
-use TRegx\CleanRegex\Internal\Factory\Worker\OffsetsWorker;
-use TRegx\CleanRegex\Internal\GroupKey\GroupIndex;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Match\Base\Base;
-use TRegx\CleanRegex\Internal\Match\FindFirst\EmptyOptional;
-use TRegx\CleanRegex\Internal\Match\FindFirst\PresentOptional;
 use TRegx\CleanRegex\Internal\Match\FlatFunction;
 use TRegx\CleanRegex\Internal\Match\FlatMap\ArrayMergeStrategy;
 use TRegx\CleanRegex\Internal\Match\FlatMap\AssignStrategy;
+use TRegx\CleanRegex\Internal\Match\IntStream\MatchIntMessages;
+use TRegx\CleanRegex\Internal\Match\IntStream\MatchOffsetMessages;
+use TRegx\CleanRegex\Internal\Match\IntStream\NthIntStreamElement;
 use TRegx\CleanRegex\Internal\Match\MatchAll\LazyMatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\MatchFirst;
 use TRegx\CleanRegex\Internal\Match\MatchOnly;
+use TRegx\CleanRegex\Internal\Match\PresentOptional;
 use TRegx\CleanRegex\Internal\Match\Stream\Base\MatchIntStream;
 use TRegx\CleanRegex\Internal\Match\Stream\Base\MatchStream;
 use TRegx\CleanRegex\Internal\Match\Stream\Base\OffsetLimitStream;
 use TRegx\CleanRegex\Internal\Match\Stream\Base\StreamBase;
 use TRegx\CleanRegex\Internal\MatchPatternHelpers;
-use TRegx\CleanRegex\Internal\Messages\Subject\FirstMatchMessage;
+use TRegx\CleanRegex\Internal\Message\SubjectNotMatched\FirstMatchMessage;
 use TRegx\CleanRegex\Internal\Model\DetailObjectFactory;
 use TRegx\CleanRegex\Internal\Model\FalseNegative;
 use TRegx\CleanRegex\Internal\Model\GroupAware;
@@ -37,11 +30,11 @@ use TRegx\CleanRegex\Internal\Model\LightweightGroupAware;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
 use TRegx\CleanRegex\Internal\Number;
 use TRegx\CleanRegex\Internal\Predicate;
+use TRegx\CleanRegex\Internal\SubjectEmptyOptional;
 use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Match\Details\MatchDetail;
-use TRegx\CleanRegex\Match\Details\NotMatched;
 
-abstract class AbstractMatchPattern implements MatchPatternInterface
+abstract class AbstractMatchPattern implements \Countable, \IteratorAggregate
 {
     use MatchPatternHelpers;
 
@@ -51,12 +44,15 @@ abstract class AbstractMatchPattern implements MatchPatternInterface
     private $groupAware;
     /** @var MatchAllFactory */
     private $allFactory;
+    /** @var MatchOnly */
+    private $matchOnly;
 
     public function __construct(Base $base, MatchAllFactory $factory)
     {
         $this->base = $base;
-        $this->groupAware = new LightweightGroupAware($this->base->getPattern());
+        $this->groupAware = new LightweightGroupAware($this->base->definition());
         $this->allFactory = $factory;
+        $this->matchOnly = new MatchOnly($this->base);
     }
 
     abstract public function test(): bool;
@@ -91,11 +87,7 @@ abstract class AbstractMatchPattern implements MatchPatternInterface
         if ($match->matched()) {
             return new PresentOptional($consumer($this->findFirstDetail($match)));
         }
-        return new EmptyOptional(new NotMatchedOptionalWorker(
-            new FirstMatchMessage(),
-            $this->base,
-            new NotMatched($this->groupAware, $this->base),
-            SubjectNotMatchedException::class));
+        return new SubjectEmptyOptional($this->groupAware, $this->base, new FirstMatchMessage());
     }
 
     private function findFirstDetail(RawMatchOffset $match): Detail
@@ -107,13 +99,13 @@ abstract class AbstractMatchPattern implements MatchPatternInterface
 
     public function only(int $limit): array
     {
-        return (new MatchOnly($this->base, $limit))->get();
+        return $this->matchOnly->get($limit);
     }
 
     public function nth(int $index): string
     {
         if ($index < 0) {
-            throw new InvalidArgumentException("Negative nth: $index");
+            throw new \InvalidArgumentException("Negative nth: $index");
         }
         $texts = \array_values($this->base->matchAll()->getTexts());
         if (\array_key_exists($index, $texts)) {
@@ -170,34 +162,30 @@ abstract class AbstractMatchPattern implements MatchPatternInterface
         return new GroupLimit($this->base, $this->groupAware, GroupKey::of($nameOrIndex));
     }
 
-    public function offsets(): FluentMatchPattern
+    public function offsets(): IntStream
     {
-        return new FluentMatchPattern(
-            new OffsetLimitStream($this->base, new GroupIndex(0), $this->groupAware),
-            new NextStreamWorkerDecorator(new MatchStreamWorker(), new OffsetsWorker($this->base)));
+        $upstream = new OffsetLimitStream($this->base);
+        return new IntStream($upstream, new NthIntStreamElement($upstream, $this->base, new MatchOffsetMessages()), $this->base);
     }
 
     abstract public function count(): int;
 
-    public function getIterator(): Iterator
+    public function getIterator(): \Iterator
     {
-        return new ArrayIterator(\array_values($this->getDetailObjects()));
+        return new \ArrayIterator(\array_values($this->getDetailObjects()));
     }
 
     public abstract function remaining(callable $predicate): RemainingMatchPattern;
 
-    public function fluent(): FluentMatchPattern
+    public function stream(): Stream
     {
-        return new FluentMatchPattern(
-            new MatchStream(new StreamBase($this->base), $this->base, $this->base->getUserData(), new LazyMatchAllFactory($this->base)),
-            new MatchStreamWorker());
+        return new Stream(new MatchStream(new StreamBase($this->base), $this->base, $this->base->getUserData(), new LazyMatchAllFactory($this->base)), $this->base);
     }
 
-    public function asInt(int $base = null): FluentMatchPattern
+    public function asInt(int $base = null): IntStream
     {
-        return new FluentMatchPattern(
-            new MatchIntStream(new StreamBase($this->base), new Number\Base($base)),
-            new NextStreamWorkerDecorator(new MatchStreamWorker(), new AsIntStreamWorker($this->base)));
+        $upstream = new MatchIntStream(new StreamBase($this->base), new Number\Base($base), $this->base);
+        return new IntStream($upstream, new NthIntStreamElement($upstream, $this->base, new MatchIntMessages()), $this->base);
     }
 
     /**

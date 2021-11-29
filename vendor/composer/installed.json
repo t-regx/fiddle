@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "rawr/t-regx",
-            "version": "v0.13.7",
-            "version_normalized": "0.13.7.0",
+            "version": "0.18.1",
+            "version_normalized": "0.18.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/T-Regx/T-Regx.git",
-                "reference": "be5b5f0b585a7b6693f32eca58d67b2ea783e7db"
+                "reference": "a20dca1f3e43ca486971cd2ef3e5c73304a2896e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/be5b5f0b585a7b6693f32eca58d67b2ea783e7db",
-                "reference": "be5b5f0b585a7b6693f32eca58d67b2ea783e7db",
+                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/a20dca1f3e43ca486971cd2ef3e5c73304a2896e",
+                "reference": "a20dca1f3e43ca486971cd2ef3e5c73304a2896e",
                 "shasum": ""
             },
             "require": {
@@ -22,11 +22,11 @@
             "require-dev": {
                 "ext-json": "*",
                 "php-coveralls/php-coveralls": "^2.0",
-                "phpunit/phpunit": "^9.0 || ^8.0 || ^7.5",
+                "phpunit/phpunit": "^9.5.4 || ^8.0 || ^7.5",
                 "rawr/cross-data-providers": "^2.3.0",
                 "rawr/fqn-check": "^1.2.0"
             },
-            "time": "2021-09-12T18:21:43+00:00",
+            "time": "2021-11-20T16:08:56+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -65,7 +65,7 @@
             ],
             "support": {
                 "issues": "https://github.com/T-Regx/T-Regx/issues",
-                "source": "https://github.com/T-Regx/T-Regx/tree/v0.13.7"
+                "source": "https://github.com/T-Regx/T-Regx/tree/0.18.1"
             },
             "funding": [
                 {

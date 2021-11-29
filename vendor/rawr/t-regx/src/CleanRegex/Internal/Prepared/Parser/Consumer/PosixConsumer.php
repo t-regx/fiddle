@@ -22,7 +22,7 @@ class PosixConsumer implements Consumer
         while (true) {
             $closingTag = $feed->string(']');
             if ($closingTag->consumable()) {
-                $closingTag->consume();
+                $closingTag->commit();
                 if ($posix !== '') {
                     $entities->append(new Posix($posix));
                 }
@@ -43,13 +43,15 @@ class PosixConsumer implements Consumer
             if (!$feedLetter->consumable()) {
                 break;
             }
-            $letter = $feedLetter->consume();
+            $letter = $feedLetter->asString();
+            $feedLetter->commit();
             if ($letter !== '\\') {
                 $posix .= $letter;
             } else {
                 $escapedLetter = $feed->letter();
                 if ($escapedLetter->consumable()) {
-                    $escaped = $escapedLetter->consume();
+                    $escaped = $escapedLetter->asString();
+                    $escapedLetter->commit();
                     $posix .= "\\$escaped";
                 } else {
                     $posix .= "\\";

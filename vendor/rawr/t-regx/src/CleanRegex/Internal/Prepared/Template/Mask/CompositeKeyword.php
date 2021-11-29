@@ -1,53 +1,42 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Prepared\Template\Mask;
 
-use TRegx\CleanRegex\Exception\MaskMalformedPatternException;
+use Generator;
 use TRegx\CleanRegex\Internal\Needles;
-use TRegx\CleanRegex\Internal\Prepared\Word\CompositeWord;
-use TRegx\CleanRegex\Internal\Prepared\Word\PatternWord;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\CompositePhrase;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\Phrase;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\UnconjugatedPharse;
 use TRegx\CleanRegex\Internal\Prepared\Word\TextWord;
-use TRegx\CleanRegex\Internal\Prepared\Word\Word;
 
 class CompositeKeyword
 {
     /** @var string */
     private $mask;
-    /** @var string[] */
-    private $keywordPatterns;
+    /** @var KeywordPatterns */
+    private $patterns;
     /** @var Needles */
     private $needles;
 
     public function __construct(string $mask, array $keywordPatterns)
     {
         $this->mask = $mask;
-        $this->keywordPatterns = $keywordPatterns;
+        $this->patterns = new KeywordPatterns($keywordPatterns);
         $this->needles = new Needles(\array_keys($keywordPatterns));
     }
 
-    public function word(): CompositeWord
+    public function phrase(): Phrase
     {
-        return new CompositeWord($this->words());
+        return new CompositePhrase(\iterator_to_array($this->splitPhrases($this->patterns->phrases())));
     }
 
-    private function words(): array
+    private function splitPhrases(array $phrases): Generator
     {
-        foreach ($this->keywordPatterns as $keyword => $keywordPattern) {
-            if ($keyword === '') {
-                throw new \InvalidArgumentException("Keyword cannot be empty, must consist of at least one character");
-            }
-            $pattern = new KeywordPattern($keywordPattern);
-            if (!$pattern->valid()) {
-                throw new MaskMalformedPatternException("Malformed pattern '$keywordPattern' assigned to keyword '$keyword'");
+        foreach ($this->needles->split($this->mask) as $value) {
+            if (\array_key_exists($value, $phrases)) {
+                yield $phrases[$value];
+            } else {
+                yield new UnconjugatedPharse(new TextWord($value));
             }
         }
-        return \array_map([$this, 'textOrPatternWord'], $this->needles->split($this->mask));
-    }
-
-    private function textOrPatternWord(string $stringOrKeyword): Word
-    {
-        if (\array_key_exists($stringOrKeyword, $this->keywordPatterns)) {
-            return new PatternWord($this->keywordPatterns[$stringOrKeyword]);
-        }
-        return new TextWord($stringOrKeyword);
     }
 }

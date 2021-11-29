@@ -1,26 +1,28 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Prepared\Parser\Entity;
 
+use TRegx\CleanRegex\Internal\Chars;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\ConjugatedPhrase;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\PatternPhrase;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\Phrase;
+
 class Comment implements Entity
 {
-    use TransitiveFlags, PatternEntity;
+    use TransitiveFlags;
 
-    /** @var string */
+    /** @var Chars */
     private $comment;
-    /** @var bool */
-    private $closed;
 
-    public function __construct(string $comment, bool $closed)
+    public function __construct(string $comment)
     {
-        $this->comment = $comment;
-        $this->closed = $closed;
+        $this->comment = new Chars($comment);
     }
 
-    public function pattern(): string
+    public function phrase(): Phrase
     {
-        if ($this->closed) {
-            return "#$this->comment\n";
+        if ($this->comment->endsWith('\\')) {
+            return new ConjugatedPhrase("#\\\n", "#\\");
         }
-        return "#$this->comment";
+        return new PatternPhrase("#$this->comment");
     }
 }

@@ -30,7 +30,7 @@ private static $installed = array (
     'aliases' => 
     array (
     ),
-    'reference' => '7e7de9d69f67f852ff2d86296d1fea1356d4fa65',
+    'reference' => 'fda9a2e446b02c937eb401289d004ef1bf04c24a',
     'name' => 'rawr/fiddle',
   ),
   'versions' => 
@@ -42,16 +42,16 @@ private static $installed = array (
       'aliases' => 
       array (
       ),
-      'reference' => '7e7de9d69f67f852ff2d86296d1fea1356d4fa65',
+      'reference' => 'fda9a2e446b02c937eb401289d004ef1bf04c24a',
     ),
     'rawr/t-regx' => 
     array (
-      'pretty_version' => 'v0.13.7',
-      'version' => '0.13.7.0',
+      'pretty_version' => '0.18.1',
+      'version' => '0.18.1.0',
       'aliases' => 
       array (
       ),
-      'reference' => 'be5b5f0b585a7b6693f32eca58d67b2ea783e7db',
+      'reference' => 'a20dca1f3e43ca486971cd2ef3e5c73304a2896e',
     ),
   ),
 );

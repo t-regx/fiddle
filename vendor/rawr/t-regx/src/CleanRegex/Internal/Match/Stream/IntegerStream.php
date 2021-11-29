@@ -1,9 +1,9 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Stream;
 
-use TRegx\CleanRegex\Exception\FluentMatchPatternException;
 use TRegx\CleanRegex\Exception\IntegerFormatException;
 use TRegx\CleanRegex\Exception\IntegerOverflowException;
+use TRegx\CleanRegex\Exception\InvalidIntegerTypeException;
 use TRegx\CleanRegex\Internal\Number\Base;
 use TRegx\CleanRegex\Internal\Number\NumberFormatException;
 use TRegx\CleanRegex\Internal\Number\NumberOverflowException;
@@ -16,24 +16,24 @@ class IntegerStream implements Upstream
     use PreservesKey;
 
     /** @var Upstream */
-    private $stream;
+    private $upstream;
     /** @var Base */
     private $base;
 
-    public function __construct(Upstream $stream, Base $base)
+    public function __construct(Upstream $upstream, Base $base)
     {
-        $this->stream = $stream;
+        $this->upstream = $upstream;
         $this->base = $base;
     }
 
     public function all(): array
     {
-        return \array_map([$this, 'parse'], $this->stream->all());
+        return \array_map([$this, 'parse'], $this->upstream->all());
     }
 
     public function first(): int
     {
-        return $this->parse($this->stream->first());
+        return $this->parse($this->upstream->first());
     }
 
     private function parse($value): int
@@ -45,15 +45,15 @@ class IntegerStream implements Upstream
             return $value->toInt();
         }
         if (!\is_string($value)) {
-            throw FluentMatchPatternException::forInvalidInteger(new ValueType($value));
+            throw InvalidIntegerTypeException::forInvalidType(new ValueType($value));
         }
         $number = new StringNumber($value);
         try {
             return $number->asInt($this->base);
         } catch (NumberOverflowException $exception) {
-            throw IntegerOverflowException::forFluent($value, $this->base);
+            throw IntegerOverflowException::forStream($value, $this->base);
         } catch (NumberFormatException $exception) {
-            throw IntegerFormatException::forFluent($value, $this->base);
+            throw IntegerFormatException::forStream($value, $this->base);
         }
     }
 }
