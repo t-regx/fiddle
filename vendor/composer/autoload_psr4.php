@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'TRegx\\' => array($vendorDir . '/rawr/t-regx/src'),
+    'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
 );
