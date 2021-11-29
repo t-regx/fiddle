@@ -27,6 +27,7 @@ exampleAllGroup();
 exampleCapturingGroups();
 exampleOldSchoolPatterns();
 exampleUserInput();
+exampleUserInputTemplate();
 
 # Feel free to edit the example, if you like :)
 
@@ -35,9 +36,9 @@ function exampleTest()
     echo "# Test a subject against a pattern all:\n";
 
     if (pattern('\d{3,}')->test('year 2020')) {
-        echo "Match!";
+        echo 'Match!';
     } else {
-        echo "No match :/";
+        echo 'No match :/';
     }
 }
 
@@ -99,6 +100,7 @@ function exampleAllGroup()
         ->match("14mm 18m 17 19m")
         ->group('unit')
         ->all();
+
     var_dump($orders);
 }
 
@@ -111,9 +113,9 @@ function exampleCapturingGroups()
         ->forEach(function (Detail $detail) {
             echo "Match: '$detail' (";
             if ($detail->matched('unit')) {
-                echo "Unit: {$detail->group('unit')}";
+                echo 'Unit: ' . $detail->group('unit');
             } else {
-                echo "No unit";
+                echo 'No unit';
             }
             $phrase = $detail->group('value')->isInt() ? 'is' : 'is not';
             echo ") - value $phrase an integer\n";
@@ -153,4 +155,19 @@ function exampleUserInput()
     # Run
     echo $pattern1->match($etcPasswd)->group(1)->first() . " - Attack successful\n";
     echo $pattern2->match($etcPasswd)->group(1)->first() . " - Correct\n";
+}
+
+function exampleUserInputTemplate()
+{
+    echo "\n\n# Working with templates:\n";
+
+    $pattern = Pattern::builder('^@:(@)?')
+        ->literal('*/({')
+        ->pattern('foo:\w+')
+        ->build();
+
+    $matched = $pattern->test('*/({:foo:12');
+
+    echo "Matched a templated pattern:\n";
+    var_dump($matched);
 }
