@@ -28,6 +28,7 @@ exampleCapturingGroups();
 exampleOldSchoolPatterns();
 exampleUserInput();
 exampleUserInputTemplate();
+exampleUserInputMask();
 
 # Feel free to edit the example, if you like :)
 
@@ -169,5 +170,23 @@ function exampleUserInputTemplate()
     $matched = $pattern->test('*/({:foo:12');
 
     echo "Matched a templated pattern:\n";
+    var_dump($matched);
+}
+
+function exampleUserInputMask()
+{
+    echo "\n\n# Working with mask:\n";
+
+    $userInput = '%e.%f => "%s"'; // Edit this user input as you like
+
+    $pattern = Pattern::mask($userInput, [
+        '%e' => '\$[a-z]+',
+        '%f' => '[A-Z]+',
+        '%s' => '\s*',
+    ]);
+
+    $matched = $pattern->test('$abc.FCD => "  "');
+
+    echo "Matched a masked pattern:\n";
     var_dump($matched);
 }
