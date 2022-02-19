@@ -7,7 +7,7 @@ use TRegx\CleanRegex\Internal\Candidates;
 use TRegx\CleanRegex\Internal\Definition;
 use TRegx\CleanRegex\Internal\Delimiter\Delimiter;
 use TRegx\CleanRegex\Internal\Delimiter\TrailingBackslashException;
-use TRegx\CleanRegex\Internal\Delimiter\UndelimiterablePatternException;
+use TRegx\CleanRegex\Internal\Delimiter\UndelimitablePatternException;
 use TRegx\CleanRegex\Internal\Flags;
 use TRegx\CleanRegex\Internal\Prepared\Parser\Consumer\LiteralPlaceholderConsumer;
 use TRegx\CleanRegex\Internal\Prepared\PatternAsEntities;
@@ -28,7 +28,7 @@ class KeywordPattern
     public function __construct(string $keyword, string $pattern)
     {
         $this->candidates = new Candidates(new UnsuitableStringCondition($pattern));
-        $this->patternAsEntities = new PatternAsEntities($pattern, new Flags(''), new LiteralPlaceholderConsumer());
+        $this->patternAsEntities = new PatternAsEntities($pattern, Flags::empty(), new LiteralPlaceholderConsumer());
         $this->pattern = $pattern;
         $this->keyword = $keyword;
     }
@@ -40,7 +40,7 @@ class KeywordPattern
 
     private function validPhrase(Phrase $phrase, Delimiter $delimiter): Phrase
     {
-        $definition = new Definition($delimiter->delimited($phrase, new Flags('')), '');
+        $definition = new Definition($delimiter->delimited($phrase, Flags::empty()), '');
         if ($definition->valid()) {
             return $phrase;
         }
@@ -60,7 +60,7 @@ class KeywordPattern
     {
         try {
             return $this->candidates->delimiter();
-        } catch (UndelimiterablePatternException $exception) {
+        } catch (UndelimitablePatternException $exception) {
             throw ExplicitDelimiterRequiredException::forMaskKeyword($this->keyword, $this->pattern);
         }
     }

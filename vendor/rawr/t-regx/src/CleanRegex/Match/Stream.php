@@ -17,7 +17,7 @@ use TRegx\CleanRegex\Internal\Match\Stream\IntegerStream;
 use TRegx\CleanRegex\Internal\Match\Stream\KeyStream;
 use TRegx\CleanRegex\Internal\Match\Stream\MapStream;
 use TRegx\CleanRegex\Internal\Match\Stream\RejectedOptional;
-use TRegx\CleanRegex\Internal\Match\Stream\StramRejectedException;
+use TRegx\CleanRegex\Internal\Match\Stream\StreamRejectedException;
 use TRegx\CleanRegex\Internal\Match\Stream\UniqueStream;
 use TRegx\CleanRegex\Internal\Match\Stream\Upstream;
 use TRegx\CleanRegex\Internal\Match\Stream\ValuesStream;
@@ -25,7 +25,7 @@ use TRegx\CleanRegex\Internal\Match\StreamTerminal;
 use TRegx\CleanRegex\Internal\Message\Stream\FromFirstStreamMessage;
 use TRegx\CleanRegex\Internal\Message\Stream\FromNthStreamMessage;
 use TRegx\CleanRegex\Internal\Message\Stream\SubjectNotMatched;
-use TRegx\CleanRegex\Internal\Number;
+use TRegx\CleanRegex\Internal\Numeral;
 use TRegx\CleanRegex\Internal\Predicate;
 use TRegx\CleanRegex\Internal\Subject;
 
@@ -86,7 +86,7 @@ class Stream implements \Countable, \IteratorAggregate
     {
         try {
             $firstElement = $this->upstream->first();
-        } catch (StramRejectedException $exception) {
+        } catch (StreamRejectedException $exception) {
             return new RejectedOptional(new Rejection($this->subject, NoSuchStreamElementException::class, $exception->notMatchedMessage()));
         } catch (EmptyStreamException $exception) {
             return new RejectedOptional(new Rejection($this->subject, NoSuchStreamElementException::class, new FromFirstStreamMessage()));
@@ -152,7 +152,7 @@ class Stream implements \Countable, \IteratorAggregate
 
     public function asInt(int $base = null): Stream
     {
-        return $this->next(new IntegerStream($this->upstream, new Number\Base($base)));
+        return $this->next(new IntegerStream($this->upstream, new Numeral\Base($base)));
     }
 
     public function groupByCallback(callable $groupMapper): Stream
@@ -163,5 +163,13 @@ class Stream implements \Countable, \IteratorAggregate
     private function next(Upstream $upstream): Stream
     {
         return new Stream($upstream, $this->subject);
+    }
+
+    public function reduce(callable $reducer, $accumulator)
+    {
+        foreach ($this as $detail) {
+            $accumulator = $reducer($accumulator, $detail);
+        };
+        return $accumulator;
     }
 }

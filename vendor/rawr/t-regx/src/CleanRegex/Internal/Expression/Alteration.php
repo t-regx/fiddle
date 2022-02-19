@@ -4,7 +4,7 @@ namespace TRegx\CleanRegex\Internal\Expression;
 use TRegx\CleanRegex\Internal\Delimiter\Delimiter;
 use TRegx\CleanRegex\Internal\Flags;
 use TRegx\CleanRegex\Internal\Prepared\Phrase\Phrase;
-use TRegx\CleanRegex\Internal\Prepared\Phrase\UnconjugatedPharse;
+use TRegx\CleanRegex\Internal\Prepared\Phrase\UnconjugatedPhrase;
 use TRegx\CleanRegex\Internal\Prepared\Word\AlterationWord;
 
 class Alteration implements Expression
@@ -16,15 +16,15 @@ class Alteration implements Expression
     /** @var Flags */
     private $flags;
 
-    public function __construct(array $texts, string $flags)
+    public function __construct(array $texts, Flags $flags)
     {
         $this->texts = $texts;
-        $this->flags = new Flags($flags);
+        $this->flags = $flags;
     }
 
     protected function phrase(): Phrase
     {
-        return new UnconjugatedPharse(new AlterationWord($this->texts));
+        return new UnconjugatedPhrase(new AlterationWord($this->texts));
     }
 
     protected function delimiter(): Delimiter

@@ -1,42 +1,32 @@
-<?php return array (
-  'root' => 
-  array (
-    'pretty_version' => 'dev-master',
-    'version' => 'dev-master',
-    'aliases' => 
-    array (
+<?php return array(
+    'root' => array(
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'reference' => '8595050493938edeaba96d97c67f260b8e0c0eab',
+        'name' => 'daniel/fiddle',
+        'dev' => true,
     ),
-    'reference' => '852e4e543c17f37aa216730de85c13cde6c5986b',
-    'name' => 'rawr/fiddle',
-  ),
-  'versions' => 
-  array (
-    'rawr/fiddle' => 
-    array (
-      'pretty_version' => 'dev-master',
-      'version' => 'dev-master',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '852e4e543c17f37aa216730de85c13cde6c5986b',
+    'versions' => array(
+        'daniel/fiddle' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'reference' => '8595050493938edeaba96d97c67f260b8e0c0eab',
+            'dev_requirement' => false,
+        ),
+        'rawr/t-regx' => array(
+            'pretty_version' => '0.20.1',
+            'version' => '0.20.1.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../rawr/t-regx',
+            'aliases' => array(),
+            'reference' => 'a5791e2039aded048e101a0c8fed86ea80969efe',
+            'dev_requirement' => false,
+        ),
     ),
-    'rawr/t-regx' => 
-    array (
-      'pretty_version' => '0.18.1',
-      'version' => '0.18.1.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => 'a20dca1f3e43ca486971cd2ef3e5c73304a2896e',
-    ),
-    'symfony/polyfill-mbstring' => 
-    array (
-      'pretty_version' => 'v1.23.1',
-      'version' => '1.23.1.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '9174a3d80210dca8daa7f31fec659150bbeabfc6',
-    ),
-  ),
 );

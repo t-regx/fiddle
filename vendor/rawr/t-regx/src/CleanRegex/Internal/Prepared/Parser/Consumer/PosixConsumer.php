@@ -17,8 +17,13 @@ class PosixConsumer implements Consumer
     public function consume(Feed $feed, EntitySequence $entities): void
     {
         $entities->append(new PosixOpen());
-        $quoteConsumer = new QuoteConsumer();
         $posix = '';
+        $immediatelyFollowed = $feed->string(']');
+        if ($immediatelyFollowed->consumable()) {
+            $posix .= ']';
+            $immediatelyFollowed->commit();
+        }
+        $quoteConsumer = new QuoteConsumer();
         while (true) {
             $closingTag = $feed->string(']');
             if ($closingTag->consumable()) {
@@ -37,6 +42,17 @@ class PosixConsumer implements Consumer
                     $posix = '';
                 }
                 $quoteConsumer->consume($feed, $entities);
+                continue;
+            }
+            $condition = $feed->characterClass();
+            if ($condition->consumable()) {
+                $class = $condition->asString();
+                $condition->commit();
+                if ($posix !== '') {
+                    $entities->append(new Posix($posix));
+                    $posix = '';
+                }
+                $entities->append(new Posix($class));
                 continue;
             }
             $feedLetter = $feed->letter();

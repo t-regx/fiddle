@@ -17,5 +17,5 @@ pattern('(origin/)?master')->match('origin/master')->first(function (Detail $det
  * Type "php EDIT_HERE.php" in the console on the right, to run.
  * You can rename the file, as you please.
  *
- * T-Regx version: 0.18.1
+ * T-Regx version: 0.20.1
  */

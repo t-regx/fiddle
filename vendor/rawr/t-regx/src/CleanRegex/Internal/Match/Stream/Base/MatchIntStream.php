@@ -5,14 +5,14 @@ use TRegx\CleanRegex\Exception\IntegerFormatException;
 use TRegx\CleanRegex\Exception\IntegerOverflowException;
 use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
 use TRegx\CleanRegex\Internal\Match\Stream\ListStream;
-use TRegx\CleanRegex\Internal\Match\Stream\StramRejectedException;
+use TRegx\CleanRegex\Internal\Match\Stream\StreamRejectedException;
 use TRegx\CleanRegex\Internal\Match\Stream\Upstream;
 use TRegx\CleanRegex\Internal\Message\SubjectNotMatched\FirstMatchAsIntMessage;
 use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
-use TRegx\CleanRegex\Internal\Number\Base;
-use TRegx\CleanRegex\Internal\Number\NumberFormatException;
-use TRegx\CleanRegex\Internal\Number\NumberOverflowException;
-use TRegx\CleanRegex\Internal\Number\StringNumber;
+use TRegx\CleanRegex\Internal\Numeral\Base;
+use TRegx\CleanRegex\Internal\Numeral\NumeralFormatException;
+use TRegx\CleanRegex\Internal\Numeral\NumeralOverflowException;
+use TRegx\CleanRegex\Internal\Numeral\StringNumeral;
 use TRegx\CleanRegex\Internal\Subject;
 
 class MatchIntStream implements Upstream
@@ -45,12 +45,12 @@ class MatchIntStream implements Upstream
 
     private function parseInteger(string $text): int
     {
-        $number = new StringNumber($text);
+        $number = new StringNumeral($text);
         try {
             return $number->asInt($this->base);
-        } catch (NumberFormatException $exception) {
+        } catch (NumeralFormatException $exception) {
             throw IntegerFormatException::forMatch($text, $this->base);
-        } catch (NumberOverflowException $exception) {
+        } catch (NumeralOverflowException $exception) {
             throw IntegerOverflowException::forMatch($text, $this->base);
         }
     }
@@ -60,7 +60,7 @@ class MatchIntStream implements Upstream
         try {
             return $this->stream->first();
         } catch (UnmatchedStreamException $exception) {
-            throw new StramRejectedException($this->subject, SubjectNotMatchedException::class, new FirstMatchAsIntMessage());
+            throw new StreamRejectedException($this->subject, SubjectNotMatchedException::class, new FirstMatchAsIntMessage());
         }
     }
 }

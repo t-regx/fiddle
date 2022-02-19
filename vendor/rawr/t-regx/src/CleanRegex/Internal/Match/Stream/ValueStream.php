@@ -9,12 +9,12 @@ interface ValueStream
      * @throws UnmatchedStreamException Supposed to be thrown
      * when subject backing the stream wasn't matched, to
      * differentiate an empty stream from a stream that was
-     * empty from the begining.
+     * empty from the beginning.
      */
     public function all(): array;
 
     /**
-     * @throws StramRejectedException Supposed to be thrown
+     * @throws StreamRejectedException Supposed to be thrown
      * when first element of the stream couldn't be resolved,
      * because of a match reason (unmatched subject or group).
      * @throws EmptyStreamException Supposed to be thrown

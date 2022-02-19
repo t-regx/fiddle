@@ -1,7 +1,6 @@
 <?php
 namespace TRegx\CleanRegex\Match\Details;
 
-use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\GroupKey\PerformanceSignatures;
 use TRegx\CleanRegex\Internal\GroupKey\Signatures;
@@ -14,10 +13,10 @@ use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\UserData;
 use TRegx\CleanRegex\Internal\Model\GroupAware;
 use TRegx\CleanRegex\Internal\Model\Match\Entry;
+use TRegx\CleanRegex\Internal\Model\Match\GroupEntries;
 use TRegx\CleanRegex\Internal\Model\Match\IRawMatchOffset;
 use TRegx\CleanRegex\Internal\Model\Match\UsedForGroup;
-use TRegx\CleanRegex\Internal\Model\Match\UsedInCompositeGroups;
-use TRegx\CleanRegex\Internal\Number\Base;
+use TRegx\CleanRegex\Internal\Numeral\Base;
 use TRegx\CleanRegex\Internal\Offset\SubjectCoordinates;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Group\Group;
@@ -42,17 +41,17 @@ class MatchDetail implements Detail
     private $groups;
 
     private function __construct(
-        Subject               $subject,
-        int                   $index,
-        int                   $limit,
-        GroupAware            $groupAware,
-        Entry                 $matchEntry,
-        UsedInCompositeGroups $usedInCompo,
-        UsedForGroup          $usedForGroup,
-        MatchAllFactory       $allFactory,
-        UserData              $userData,
-        GroupFactoryStrategy  $strategy,
-        Signatures            $signatures)
+        Subject              $subject,
+        int                  $index,
+        int                  $limit,
+        GroupAware           $groupAware,
+        Entry                $matchEntry,
+        GroupEntries         $entries,
+        UsedForGroup         $usedForGroup,
+        MatchAllFactory      $allFactory,
+        UserData             $userData,
+        GroupFactoryStrategy $strategy,
+        Signatures           $signatures)
     {
         $this->scalars = new DetailScalars($matchEntry, $index, $limit, $allFactory, $subject);
         $this->userData = $userData;
@@ -60,7 +59,7 @@ class MatchDetail implements Detail
         $this->duplicateName = new DuplicateName($groupAware, $usedForGroup, $matchEntry, $subject, $strategy, $allFactory, $signatures);
         $this->numericDetail = new NumericDetail($matchEntry);
         $this->group = new DetailGroup($groupAware, $matchEntry, $usedForGroup, $signatures, $strategy, $allFactory, $subject);
-        $this->groups = new DetailGroups($groupAware, $usedInCompo, $subject);
+        $this->groups = new DetailGroups($groupAware, $entries, $subject);
     }
 
     public static function create(Subject         $subject, int $index, int $limit,
@@ -120,7 +119,6 @@ class MatchDetail implements Detail
     /**
      * @param string|int $nameOrIndex
      * @return Group
-     * @throws NonexistentGroupException
      */
     public function group($nameOrIndex): Group
     {
@@ -139,7 +137,6 @@ class MatchDetail implements Detail
     /**
      * @param string|int $nameOrIndex
      * @return bool
-     * @throws NonexistentGroupException
      */
     public function matched($nameOrIndex): bool
     {
