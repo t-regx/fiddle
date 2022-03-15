@@ -8,12 +8,17 @@ class ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23
 {
     public static $files = array (
         '8b3f8a3ae8e6735c5c18ca84e978b632' => __DIR__ . '/..' . '/rawr/t-regx/helper/helper.php',
+        '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
     );
 
     public static $prefixLengthsPsr4 = array (
         'T' => 
         array (
             'TRegx\\' => 6,
+        ),
+        'S' => 
+        array (
+            'Symfony\\Polyfill\\Mbstring\\' => 26,
         ),
         'D' => 
         array (
@@ -25,6 +30,10 @@ class ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23
         'TRegx\\' => 
         array (
             0 => __DIR__ . '/..' . '/rawr/t-regx/src',
+        ),
+        'Symfony\\Polyfill\\Mbstring\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
         'Daniel\\Fiddle\\' => 
         array (
