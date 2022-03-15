@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "rawr/t-regx",
-            "version": "0.20.1",
-            "version_normalized": "0.20.1.0",
+            "version": "0.20.2",
+            "version_normalized": "0.20.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/T-Regx/T-Regx.git",
-                "reference": "a5791e2039aded048e101a0c8fed86ea80969efe"
+                "reference": "c75d65afeefd50c0e762de229888938f37cd8a31"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/a5791e2039aded048e101a0c8fed86ea80969efe",
-                "reference": "a5791e2039aded048e101a0c8fed86ea80969efe",
+                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/c75d65afeefd50c0e762de229888938f37cd8a31",
+                "reference": "c75d65afeefd50c0e762de229888938f37cd8a31",
                 "shasum": ""
             },
             "require": {
@@ -27,7 +27,7 @@
                 "rawr/fqn-check": "^1.2.0",
                 "symfony/console": "<6.0"
             },
-            "time": "2022-03-09T15:32:18+00:00",
+            "time": "2022-03-15T10:50:23+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -66,7 +66,7 @@
             ],
             "support": {
                 "issues": "https://github.com/T-Regx/T-Regx/issues",
-                "source": "https://github.com/T-Regx/T-Regx/tree/0.20.1"
+                "source": "https://github.com/T-Regx/T-Regx/tree/0.20.2"
             },
             "funding": [
                 {

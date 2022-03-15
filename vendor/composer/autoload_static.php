@@ -7,8 +7,8 @@ namespace Composer\Autoload;
 class ComposerStaticInitf76b0a2b3818b7241a2774c0d3480a23
 {
     public static $files = array (
-        '8b3f8a3ae8e6735c5c18ca84e978b632' => __DIR__ . '/..' . '/rawr/t-regx/helper/helper.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
+        '8b3f8a3ae8e6735c5c18ca84e978b632' => __DIR__ . '/..' . '/rawr/t-regx/helper/helper.php',
     );
 
     public static $prefixLengthsPsr4 = array (
