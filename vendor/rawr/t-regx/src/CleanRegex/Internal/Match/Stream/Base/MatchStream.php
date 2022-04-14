@@ -1,19 +1,17 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Stream\Base;
 
-use TRegx\CleanRegex\Exception\SubjectNotMatchedException;
-use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Match\Stream\ListStream;
-use TRegx\CleanRegex\Internal\Match\Stream\StreamRejectedException;
+use TRegx\CleanRegex\Internal\Match\Stream\SubjectStreamRejectedException;
 use TRegx\CleanRegex\Internal\Match\Stream\Upstream;
-use TRegx\CleanRegex\Internal\Match\UserData;
 use TRegx\CleanRegex\Internal\Message\SubjectNotMatched\FirstMatchMessage;
 use TRegx\CleanRegex\Internal\Model\DetailObjectFactory;
 use TRegx\CleanRegex\Internal\Model\FalseNegative;
-use TRegx\CleanRegex\Internal\Model\GroupPolyfillDecorator;
+use TRegx\CleanRegex\Internal\Pcre\DeprecatedMatchDetail;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\GroupPolyfillDecorator;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Detail;
-use TRegx\CleanRegex\Match\Details\MatchDetail;
 
 class MatchStream implements Upstream
 {
@@ -23,20 +21,17 @@ class MatchStream implements Upstream
     private $stream;
     /** @var Subject */
     private $subject;
-    /** @var UserData */
-    private $userData;
     /** @var MatchAllFactory */
     private $allFactory;
     /** @var DetailObjectFactory */
     private $detailObjects;
 
-    public function __construct(StreamBase $stream, Subject $subject, UserData $userData, MatchAllFactory $allFactory)
+    public function __construct(StreamBase $stream, Subject $subject, MatchAllFactory $allFactory)
     {
         $this->stream = $stream;
         $this->subject = $subject;
-        $this->userData = $userData;
         $this->allFactory = $allFactory;
-        $this->detailObjects = new DetailObjectFactory($subject, $userData);
+        $this->detailObjects = new DetailObjectFactory($subject);
     }
 
     protected function entries(): array
@@ -46,12 +41,11 @@ class MatchStream implements Upstream
 
     protected function firstValue(): Detail
     {
-        return MatchDetail::create($this->subject,
+        return DeprecatedMatchDetail::create($this->subject,
             $this->tryFirstKey(),
             1,
             new GroupPolyfillDecorator(new FalseNegative($this->stream->first()), $this->allFactory, 0),
-            $this->allFactory,
-            $this->userData);
+            $this->allFactory);
     }
 
     private function tryFirstKey(): int
@@ -59,7 +53,7 @@ class MatchStream implements Upstream
         try {
             return $this->stream->firstKey();
         } catch (UnmatchedStreamException $exception) {
-            throw new StreamRejectedException($this->subject, SubjectNotMatchedException::class, new FirstMatchMessage());
+            throw new SubjectStreamRejectedException(new FirstMatchMessage(), $this->subject);
         }
     }
 }

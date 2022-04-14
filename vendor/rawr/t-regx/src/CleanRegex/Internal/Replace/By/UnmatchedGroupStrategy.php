@@ -1,9 +1,7 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Replace\By;
 
-use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
-use TRegx\CleanRegex\Internal\Message\Replace\WithUnmatchedGroupMessage;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\DetailGroupMapper;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\GroupMapper;
 use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\ComputedMatchStrategy;
@@ -44,11 +42,9 @@ class UnmatchedGroupStrategy implements GroupReplace
         return $this->replace(new ComputedMatchStrategy($replacementProducer, "orElseCalling"));
     }
 
-    public function orElseThrow(string $exceptionClassName = null): string
+    public function orElseThrow(\Throwable $throwable = null): string
     {
-        return $this->replace(new ThrowStrategy(
-            $exceptionClassName ?? GroupNotMatchedException::class,
-            new WithUnmatchedGroupMessage($this->group)));
+        return $this->replace(new ThrowStrategy($throwable, $this->group));
     }
 
     public function orElseIgnore(): string

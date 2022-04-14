@@ -26,9 +26,9 @@ class IntStream implements \Countable, \IteratorAggregate
     /** @var StreamTerminal */
     private $terminal;
     /** @var Upstream */
-    protected $upstream;
+    private $upstream;
     /** @var NthIntStreamElement */
-    protected $nth;
+    private $nth;
     /** @var Subject */
     private $subject;
 
@@ -83,7 +83,7 @@ class IntStream implements \Countable, \IteratorAggregate
         try {
             return new PresentOptional($this->upstream->first());
         } catch (StreamRejectedException $exception) {
-            return new RejectedOptional($exception->rejection());
+            return new RejectedOptional($exception->throwable());
         }
     }
 
@@ -98,11 +98,6 @@ class IntStream implements \Countable, \IteratorAggregate
             throw new \InvalidArgumentException("Negative index: $index");
         }
         return $this->nth->optional($index);
-    }
-
-    public function asInt(): IntStream
-    {
-        return $this;
     }
 
     public function map(callable $mapper): Stream
@@ -140,6 +135,11 @@ class IntStream implements \Countable, \IteratorAggregate
         return $this->next(new KeyStream($this->upstream));
     }
 
+    public function asInt(): IntStream
+    {
+        return $this;
+    }
+
     public function groupByCallback(callable $groupMapper): Stream
     {
         return $this->next(new GroupByCallbackStream($this->upstream, new GroupByFunction('groupByCallback', $groupMapper)));
@@ -148,6 +148,14 @@ class IntStream implements \Countable, \IteratorAggregate
     private function next(Upstream $upstream): Stream
     {
         return new Stream($upstream, $this->subject);
+    }
+
+    public function reduce(callable $reducer, $accumulator)
+    {
+        foreach ($this as $detail) {
+            $accumulator = $reducer($accumulator, $detail);
+        }
+        return $accumulator;
     }
 
     public function stream(): Stream

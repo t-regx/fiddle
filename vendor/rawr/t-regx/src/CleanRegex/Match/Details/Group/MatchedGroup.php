@@ -1,11 +1,12 @@
 <?php
 namespace TRegx\CleanRegex\Match\Details\Group;
 
-use TRegx\CleanRegex\Exception\IntegerFormatException;
-use TRegx\CleanRegex\Exception\IntegerOverflowException;
+use Throwable;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupDetails;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupEntry;
 use TRegx\CleanRegex\Internal\Match\Details\Group\SubstitutedGroup;
+use TRegx\CleanRegex\Internal\Match\Numeral\GroupExceptions;
+use TRegx\CleanRegex\Internal\Match\Numeral\IntegerBase;
 use TRegx\CleanRegex\Internal\Match\PresentOptional;
 use TRegx\CleanRegex\Internal\Numeral\Base;
 use TRegx\CleanRegex\Internal\Numeral\NumeralFormatException;
@@ -40,7 +41,7 @@ class MatchedGroup implements Group
 
     public function textLength(): int
     {
-        return \mb_strlen($this->groupEntry->text());
+        return \mb_strlen($this->groupEntry->text(), 'UTF-8');
     }
 
     public function textByteLength(): int
@@ -50,14 +51,8 @@ class MatchedGroup implements Group
 
     public function toInt(int $base = null): int
     {
-        $number = new StringNumeral($this->groupEntry->text());
-        try {
-            return $number->asInt(new Base($base));
-        } catch (NumeralFormatException $exception) {
-            throw IntegerFormatException::forGroup($this->details->group(), $this->groupEntry->text(), new Base($base));
-        } catch (NumeralOverflowException $exception) {
-            throw IntegerOverflowException::forGroup($this->details->group(), $this->groupEntry->text(), new Base($base));
-        }
+        $integerBase = new IntegerBase(new Base($base), new GroupExceptions($this->details->group()));
+        return $integerBase->integer($this->groupEntry->text());
     }
 
     public function isInt(int $base = null): bool
@@ -129,7 +124,7 @@ class MatchedGroup implements Group
 
     public function subject(): string
     {
-        return $this->subject->getSubject();
+        return $this->subject;
     }
 
     public function all(): array
@@ -137,7 +132,7 @@ class MatchedGroup implements Group
         return $this->details->all();
     }
 
-    public function orThrow(string $exceptionClassName = null): string
+    public function orThrow(Throwable $throwable = null): string
     {
         return $this->text();
     }

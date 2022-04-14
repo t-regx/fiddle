@@ -2,40 +2,36 @@
 namespace TRegx\CleanRegex\Internal;
 
 use TRegx\CleanRegex\Exception\InternalCleanRegexException;
-use TRegx\CleanRegex\Internal\Model\GroupAware;
+use TRegx\CleanRegex\Internal\Model\GroupKeys;
 
 class GroupNames
 {
-    /** @var GroupAware */
-    private $groupAware;
+    /** @var GroupKeys */
+    private $groupKeys;
 
-    public function __construct(GroupAware $groupAware)
+    public function __construct(GroupKeys $groupKeys)
     {
-        $this->groupAware = $groupAware;
+        $this->groupKeys = $groupKeys;
     }
 
     public function groupNames(): array
     {
-        $groupKeys = $this->groupAware->getGroupKeys();
-        if (\count($groupKeys) <= 1) {
-            return [];
-        }
-        return $this->filterOutUnnamedGroups(\array_slice($groupKeys, 1));
+        return $this->withoutUnnamedGroups(\array_slice($this->groupKeys->getGroupKeys(), 1));
     }
 
-    private function filterOutUnnamedGroups(array $groups): array
+    private function withoutUnnamedGroups(array $groupKeys): array
     {
-        $result = [];
+        $names = [];
         $lastWasString = false;
-        foreach ($groups as $group) {
-            if (\is_string($group)) {
-                $result[] = $group;
+        foreach ($groupKeys as $groupKey) {
+            if (\is_string($groupKey)) {
+                $names[] = $groupKey;
                 $lastWasString = true;
-            } else if (\is_int($group)) {
+            } else if (\is_int($groupKey)) {
                 if ($lastWasString) {
                     $lastWasString = false;
                 } else {
-                    $result[] = null;
+                    $names[] = null;
                 }
             } else {
                 // @codeCoverageIgnoreStart
@@ -43,6 +39,6 @@ class GroupNames
                 // @codeCoverageIgnoreEnd
             }
         }
-        return $result;
+        return $names;
     }
 }

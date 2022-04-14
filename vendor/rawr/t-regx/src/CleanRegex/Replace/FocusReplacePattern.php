@@ -4,8 +4,8 @@ namespace TRegx\CleanRegex\Replace;
 use TRegx\CleanRegex\Exception\FocusGroupNotMatchedException;
 use TRegx\CleanRegex\Internal\Definition;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
-use TRegx\CleanRegex\Internal\Match\Base\ApiBase;
-use TRegx\CleanRegex\Internal\Match\UserData;
+use TRegx\CleanRegex\Internal\Model\LightweightGroupAware;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\ApiBase;
 use TRegx\CleanRegex\Internal\Replace\By\GroupFallbackReplacer;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\FocusWrapper;
 use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\DefaultStrategy;
@@ -16,7 +16,6 @@ use TRegx\CleanRegex\Internal\Replace\ReferencesReplacer;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Replace\By\ByReplacePattern;
-use TRegx\CleanRegex\Replace\Callback\ReplacePatternCallbackInvoker;
 
 class FocusReplacePattern implements SpecificReplacePattern
 {
@@ -52,7 +51,7 @@ class FocusReplacePattern implements SpecificReplacePattern
     {
         return $this->replacePattern->callback(function (Detail $detail) use ($replacement) {
             if (!$detail->matched($this->group->nameOrIndex())) {
-                throw new FocusGroupNotMatchedException($detail->subject(), $this->group);
+                throw new FocusGroupNotMatchedException($this->group);
             }
             return $detail->group($this->group->nameOrIndex())->substitute($replacement);
         });
@@ -62,7 +61,7 @@ class FocusReplacePattern implements SpecificReplacePattern
     {
         return $this->replacePattern->callback(function (Detail $detail) use ($replacement) {
             if (!$detail->matched($this->group->nameOrIndex())) {
-                throw new FocusGroupNotMatchedException($detail->subject(), $this->group);
+                throw new FocusGroupNotMatchedException($this->group);
             }
             $group = $detail->group($this->group->nameOrIndex());
             return $group->substitute(ReferencesReplacer::replace($replacement, \array_merge(
@@ -77,7 +76,7 @@ class FocusReplacePattern implements SpecificReplacePattern
             if ($detail->matched($this->group->nameOrIndex())) {
                 return $detail->group($this->group->nameOrIndex())->substitute($callback($detail));
             }
-            throw new FocusGroupNotMatchedException($detail->subject(), $this->group);
+            throw new FocusGroupNotMatchedException($this->group);
         });
     }
 
@@ -90,10 +89,11 @@ class FocusReplacePattern implements SpecificReplacePattern
                 $this->limit,
                 new DefaultStrategy(),
                 $this->countingStrategy,
-                new ApiBase($this->definition, $this->subject, new UserData())),
+                new ApiBase($this->definition, $this->subject)),
             new LazyMessageThrowStrategy(),
             new PerformanceEmptyGroupReplace($this->definition, $this->subject, $this->limit),
-            new ReplacePatternCallbackInvoker($this->definition, $this->subject, $this->limit, new DefaultStrategy(), $this->countingStrategy),
+            $this->definition, $this->limit, $this->countingStrategy,
+            new LightweightGroupAware($this->definition),
             $this->subject,
             new FocusWrapper($this->group));
     }

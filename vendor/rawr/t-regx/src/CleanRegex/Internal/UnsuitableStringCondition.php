@@ -3,16 +3,16 @@ namespace TRegx\CleanRegex\Internal;
 
 class UnsuitableStringCondition implements Condition
 {
-    /** @var Chars */
+    /** @var string */
     private $string;
 
     public function __construct(string $string)
     {
-        $this->string = new Chars($string);
+        $this->string = $string;
     }
 
     public function suitable(string $candidate): bool
     {
-        return !$this->string->contains($candidate);
+        return \strPos($this->string, $candidate) === false;
     }
 }

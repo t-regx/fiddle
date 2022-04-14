@@ -29,7 +29,7 @@ class PatternStructure implements Structure
 
     public function subject(): string
     {
-        return $this->subject->getSubject();
+        return $this->subject;
     }
 
     public function groupNames(): array
@@ -44,7 +44,6 @@ class PatternStructure implements Structure
 
     public function hasGroup($nameOrIndex): bool
     {
-        GroupKey::of($nameOrIndex);
-        return $this->groupAware->hasGroup($nameOrIndex);
+        return $this->groupAware->hasGroup(GroupKey::of($nameOrIndex));
     }
 }

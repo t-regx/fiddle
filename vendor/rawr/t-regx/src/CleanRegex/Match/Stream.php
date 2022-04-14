@@ -7,8 +7,6 @@ use TRegx\CleanRegex\Internal\Match\FlatMap\ArrayMergeStrategy;
 use TRegx\CleanRegex\Internal\Match\FlatMap\AssignStrategy;
 use TRegx\CleanRegex\Internal\Match\GroupByFunction;
 use TRegx\CleanRegex\Internal\Match\PresentOptional;
-use TRegx\CleanRegex\Internal\Match\Rejection;
-use TRegx\CleanRegex\Internal\Match\Stream\Base\UnmatchedStreamException;
 use TRegx\CleanRegex\Internal\Match\Stream\EmptyStreamException;
 use TRegx\CleanRegex\Internal\Match\Stream\FilterStream;
 use TRegx\CleanRegex\Internal\Match\Stream\FlatMapStream;
@@ -16,6 +14,7 @@ use TRegx\CleanRegex\Internal\Match\Stream\GroupByCallbackStream;
 use TRegx\CleanRegex\Internal\Match\Stream\IntegerStream;
 use TRegx\CleanRegex\Internal\Match\Stream\KeyStream;
 use TRegx\CleanRegex\Internal\Match\Stream\MapStream;
+use TRegx\CleanRegex\Internal\Match\Stream\NthStreamElement;
 use TRegx\CleanRegex\Internal\Match\Stream\RejectedOptional;
 use TRegx\CleanRegex\Internal\Match\Stream\StreamRejectedException;
 use TRegx\CleanRegex\Internal\Match\Stream\UniqueStream;
@@ -23,8 +22,6 @@ use TRegx\CleanRegex\Internal\Match\Stream\Upstream;
 use TRegx\CleanRegex\Internal\Match\Stream\ValuesStream;
 use TRegx\CleanRegex\Internal\Match\StreamTerminal;
 use TRegx\CleanRegex\Internal\Message\Stream\FromFirstStreamMessage;
-use TRegx\CleanRegex\Internal\Message\Stream\FromNthStreamMessage;
-use TRegx\CleanRegex\Internal\Message\Stream\SubjectNotMatched;
 use TRegx\CleanRegex\Internal\Numeral;
 use TRegx\CleanRegex\Internal\Predicate;
 use TRegx\CleanRegex\Internal\Subject;
@@ -35,6 +32,8 @@ class Stream implements \Countable, \IteratorAggregate
     private $terminal;
     /** @var Upstream */
     private $upstream;
+    /** @var NthStreamElement */
+    private $nth;
     /** @var Subject */
     private $subject;
 
@@ -42,6 +41,7 @@ class Stream implements \Countable, \IteratorAggregate
     {
         $this->terminal = new StreamTerminal($upstream);
         $this->upstream = $upstream;
+        $this->nth = new NthStreamElement($upstream, $subject);
         $this->subject = $subject;
     }
 
@@ -70,28 +70,33 @@ class Stream implements \Countable, \IteratorAggregate
         return $this->terminal->getIterator();
     }
 
-    /**
-     * @param callable|null $consumer
-     * @return mixed
-     */
+    public function reduce(callable $reducer, $accumulator)
+    {
+        return $this->terminal->reduce($reducer, $accumulator);
+    }
+
     public function first(callable $consumer = null)
     {
-        return $this->findFirst($consumer ?? static function ($argument) {
-                return $argument;
-            })
-            ->orThrow();
+        if ($consumer === null) {
+            return $this->firstOptional()->orThrow();
+        }
+        return $this->firstOptional()->map($consumer)->orThrow();
     }
 
     public function findFirst(callable $consumer): Optional
     {
+        return $this->firstOptional()->map($consumer);
+    }
+
+    private function firstOptional(): Optional
+    {
         try {
-            $firstElement = $this->upstream->first();
+            return new PresentOptional($this->upstream->first());
         } catch (StreamRejectedException $exception) {
-            return new RejectedOptional(new Rejection($this->subject, NoSuchStreamElementException::class, $exception->notMatchedMessage()));
+            return new RejectedOptional(new NoSuchStreamElementException($exception->notMatchedMessage()));
         } catch (EmptyStreamException $exception) {
-            return new RejectedOptional(new Rejection($this->subject, NoSuchStreamElementException::class, new FromFirstStreamMessage()));
+            return new RejectedOptional(new NoSuchStreamElementException(new FromFirstStreamMessage()));
         }
-        return new PresentOptional($consumer($firstElement));
     }
 
     public function nth(int $index)
@@ -104,15 +109,7 @@ class Stream implements \Countable, \IteratorAggregate
         if ($index < 0) {
             throw new \InvalidArgumentException("Negative index: $index");
         }
-        try {
-            $elements = \array_values($this->upstream->all());
-        } catch (UnmatchedStreamException $exception) {
-            return new RejectedOptional(new Rejection($this->subject, NoSuchStreamElementException::class, new SubjectNotMatched\FromNthStreamMessage($index)));
-        }
-        if (!\array_key_exists($index, $elements)) {
-            return new RejectedOptional(new Rejection($this->subject, NoSuchStreamElementException::class, new FromNthStreamMessage($index, \count($elements))));
-        }
-        return new PresentOptional($elements[$index]);
+        return $this->nth->optional($index);
     }
 
     public function map(callable $mapper): Stream
@@ -163,13 +160,5 @@ class Stream implements \Countable, \IteratorAggregate
     private function next(Upstream $upstream): Stream
     {
         return new Stream($upstream, $this->subject);
-    }
-
-    public function reduce(callable $reducer, $accumulator)
-    {
-        foreach ($this as $detail) {
-            $accumulator = $reducer($accumulator, $detail);
-        };
-        return $accumulator;
     }
 }

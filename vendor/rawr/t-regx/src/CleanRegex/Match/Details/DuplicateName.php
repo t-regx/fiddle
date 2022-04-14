@@ -8,10 +8,10 @@ use TRegx\CleanRegex\Internal\Match\Details\DuplicateNamedGroupAdapter;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFacade;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFactoryStrategy;
 use TRegx\CleanRegex\Internal\Match\Details\Group\Handle\RuntimeNamedGroup;
-use TRegx\CleanRegex\Internal\Match\MatchAll\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Model\GroupAware;
 use TRegx\CleanRegex\Internal\Model\Match\Entry;
-use TRegx\CleanRegex\Internal\Model\Match\UsedForGroup;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\MatchAllFactory;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\UsedForGroup;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Group\DuplicateNamedGroup;
 
@@ -112,7 +112,7 @@ class DuplicateName
     public function group(string $groupName): DuplicateNamedGroup
     {
         $group = new GroupName($groupName);
-        if (!$this->groupAware->hasGroup($group->nameOrIndex())) {
+        if (!$this->groupAware->hasGroup($group)) {
             throw new NonexistentGroupException($group);
         }
         return new DuplicateNamedGroupAdapter($groupName, $this->groupFacade->createGroup($group, $this->forGroup, $this->entry));

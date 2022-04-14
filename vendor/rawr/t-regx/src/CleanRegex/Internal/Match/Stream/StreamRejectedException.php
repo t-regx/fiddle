@@ -2,34 +2,24 @@
 namespace TRegx\CleanRegex\Internal\Match\Stream;
 
 use Exception;
-use TRegx\CleanRegex\Internal\Match\Rejection;
-use TRegx\CleanRegex\Internal\Message\NotMatchedMessage;
-use TRegx\CleanRegex\Internal\Subject;
+use Throwable;
+use TRegx\CleanRegex\Internal\Message\Message;
 
-class StreamRejectedException extends Exception
+abstract class StreamRejectedException extends Exception
 {
-    /** @var Subject */
-    private $subject;
-    /** @var string */
-    private $exceptionClassName;
-    /** @var NotMatchedMessage */
-    private $notMatchedMessage;
+    /** @var Message */
+    protected $exceptionMessage;
 
-    public function __construct(Subject $subject, string $exceptionClassName, NotMatchedMessage $notMatchedMessage)
+    public function __construct(Message $message)
     {
         parent::__construct();
-        $this->subject = $subject;
-        $this->exceptionClassName = $exceptionClassName;
-        $this->notMatchedMessage = $notMatchedMessage;
+        $this->exceptionMessage = $message;
     }
 
-    public function rejection(): Rejection
-    {
-        return new Rejection($this->subject, $this->exceptionClassName, $this->notMatchedMessage);
-    }
+    public abstract function throwable(): Throwable;
 
-    public function notMatchedMessage(): NotMatchedMessage
+    public function notMatchedMessage(): Message
     {
-        return $this->notMatchedMessage;
+        return $this->exceptionMessage;
     }
 }

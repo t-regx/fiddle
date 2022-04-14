@@ -1,32 +1,40 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Replace\By\NonReplaced;
 
-use TRegx\CleanRegex\Internal\ClassName;
-use TRegx\CleanRegex\Internal\Message\NotMatchedMessage;
-use TRegx\CleanRegex\Internal\StringSubject;
+use Throwable;
+use TRegx\CleanRegex\Exception\GroupNotMatchedException;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Match\Details\Detail;
 
 class ThrowStrategy implements SubjectRs, MatchRs
 {
-    /** @var ClassName */
-    private $className;
-    /** @var NotMatchedMessage */
-    private $message;
+    /** @var Throwable|null */
+    private $throwable;
+    /** @var GroupKey */
+    private $group;
 
-    public function __construct(string $className, NotMatchedMessage $message)
+    public function __construct(?Throwable $throwable, GroupKey $group)
     {
-        $this->className = new ClassName($className);
-        $this->message = $message;
+        $this->throwable = $throwable;
+        $this->group = $group;
     }
 
     public function substitute(Subject $subject): string
     {
-        throw $this->className->throwable($this->message, $subject);
+        throw $this->throwable();
     }
 
     public function substituteGroup(Detail $detail): string
     {
-        throw $this->className->throwable($this->message, new StringSubject($detail->subject()));
+        throw $this->throwable();
+    }
+
+    private function throwable(): Throwable
+    {
+        if ($this->throwable === null) {
+            return GroupNotMatchedException::forReplacement($this->group);
+        }
+        return $this->throwable;
     }
 }

@@ -21,12 +21,15 @@ interface Detail extends Structure, Intable
 
     public function index(): int;
 
+    /**
+     * @return int
+     * @deprecated
+     */
     public function limit(): int;
 
     /**
      * @param string|int $nameOrIndex
      * @return string
-     * @throws NonexistentGroupException
      */
     public function get($nameOrIndex): string;
 
@@ -46,7 +49,6 @@ interface Detail extends Structure, Intable
     /**
      * @param string|int $nameOrIndex
      * @return bool
-     * @throws NonexistentGroupException
      */
     public function matched($nameOrIndex): bool;
 
@@ -62,10 +64,6 @@ interface Detail extends Structure, Intable
     public function byteOffset(): int;
 
     public function byteTail(): int;
-
-    public function setUserData($userData): void;
-
-    public function getUserData();
 
     public function __toString(): string;
 }

@@ -3,18 +3,17 @@ namespace TRegx\CleanRegex\Replace\Callback;
 
 use TRegx\CleanRegex\Exception\GroupNotMatchedException;
 use TRegx\CleanRegex\Exception\InvalidReplacementException;
+use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Match\Details\Group\ReplaceMatchGroupFactoryStrategy;
-use TRegx\CleanRegex\Internal\Match\MatchAll\EagerMatchAllFactory;
-use TRegx\CleanRegex\Internal\Match\UserData;
-use TRegx\CleanRegex\Internal\Model\Match\RawMatchesOffset;
-use TRegx\CleanRegex\Internal\Model\RawMatchesToMatchAdapter;
-use TRegx\CleanRegex\Internal\Replace\Details\Modification;
+use TRegx\CleanRegex\Internal\Model\GroupAware;
+use TRegx\CleanRegex\Internal\Pcre\DeprecatedMatchDetail;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\MatchAllFactory;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\RawMatchesToMatchAdapter;
 use TRegx\CleanRegex\Internal\Subject;
 use TRegx\CleanRegex\Internal\Type\ValueType;
 use TRegx\CleanRegex\Match\Details\Detail;
 use TRegx\CleanRegex\Match\Details\Group\CapturingGroup;
-use TRegx\CleanRegex\Match\Details\MatchDetail;
 use TRegx\CleanRegex\Replace\Details\ReplaceDetail;
 
 class ReplaceCallbackObject
@@ -23,31 +22,37 @@ class ReplaceCallbackObject
     private $callback;
     /** @var Subject */
     private $subject;
-    /** @var RawMatchesOffset */
-    private $analyzedPattern;
+    /** @var MatchAllFactory */
+    private $factory;
     /** @var int */
     private $counter = 0;
-    /** @var int */
-    private $byteOffsetModification = 0;
-    /** @var string */
-    private $subjectModification;
     /** @var int */
     private $limit;
     /** @var ReplaceCallbackArgumentStrategy */
     private $argumentStrategy;
+    /** @var GroupAware */
+    private $groupAware;
+    /** @var GroupKey */
+    private $groupKey;
+    /** @var SubjectAlteration */
+    private $alteration;
 
     public function __construct(callable                        $callback,
                                 Subject                         $subject,
-                                RawMatchesOffset                $analyzedPattern,
+                                MatchAllFactory                 $factory,
                                 int                             $limit,
-                                ReplaceCallbackArgumentStrategy $argumentStrategy)
+                                ReplaceCallbackArgumentStrategy $argumentStrategy,
+                                GroupAware                      $groupAware,
+                                GroupKey                        $groupKey)
     {
         $this->callback = $callback;
         $this->subject = $subject;
-        $this->analyzedPattern = $analyzedPattern;
-        $this->subjectModification = $this->subject->getSubject();
+        $this->factory = $factory;
         $this->limit = $limit;
         $this->argumentStrategy = $argumentStrategy;
+        $this->groupAware = $groupAware;
+        $this->groupKey = $groupKey;
+        $this->alteration = new SubjectAlteration($subject);
     }
 
     public function getCallback(): callable
@@ -59,11 +64,21 @@ class ReplaceCallbackObject
 
     private function invoke(array $match): string
     {
+        if (!$this->groupExists()) {
+            throw new NonexistentGroupException($this->groupKey);
+        }
         $result = ($this->callback)($this->matchObject());
         $replacement = $this->getReplacement($result);
-        $this->modifySubject($replacement);
-        $this->modifyOffset($match[0], $replacement);
+        $this->modify($match, $replacement);
         return $replacement;
+    }
+
+    private function groupExists(): bool
+    {
+        if ($this->groupKey->nameOrIndex() === 0) {
+            return true;
+        }
+        return $this->groupAware->hasGroup($this->groupKey);
     }
 
     private function matchObject()
@@ -74,18 +89,17 @@ class ReplaceCallbackObject
     private function createDetailObject(): ReplaceDetail
     {
         $index = $this->counter++;
-        $match = new RawMatchesToMatchAdapter($this->analyzedPattern, $index);
-        return new ReplaceDetail(MatchDetail::create(
+        $match = new RawMatchesToMatchAdapter($this->factory->getRawMatches(), $index);
+        return new ReplaceDetail(DeprecatedMatchDetail::create(
             $this->subject,
             $index,
             $this->limit,
             $match,
-            new EagerMatchAllFactory($this->analyzedPattern),
-            new UserData(),
+            $this->factory,
             new ReplaceMatchGroupFactoryStrategy(
-                $this->byteOffsetModification,
-                $this->subjectModification)),
-            new Modification($match, $this->subjectModification, $this->byteOffsetModification));
+                $this->alteration->byteOffset(),
+                $this->alteration->subject())),
+            $this->alteration->modification($match->byteOffset()));
     }
 
     private function getReplacement($replacement): string
@@ -110,19 +124,20 @@ class ReplaceCallbackObject
         throw GroupNotMatchedException::forReplacement(GroupKey::of($group->usedIdentifier()));
     }
 
-    private function modifyOffset(string $search, string $replacement): void
+    private function modify(array $match, string $replacement): void
     {
-        $this->byteOffsetModification += \strlen($replacement) - \strlen($search);
+        [$text, $offset] = $this->textAndOffset($match);
+        $this->alteration->modify($text, $offset, $replacement);
     }
 
-    private function modifySubject(string $replacement): void
+    private function textAndOffset(array $match): array
     {
-        [$text, $offset] = $this->analyzedPattern->getTextAndOffset($this->counter - 1);
+        return [$match[0], $this->matchOffset()];
+    }
 
-        $this->subjectModification = \substr_replace(
-            $this->subjectModification,
-            $replacement,
-            $offset + $this->byteOffsetModification,
-            \strlen($text));
+    private function matchOffset(): int
+    {
+        [$_, $offset] = $this->factory->getRawMatches()->getTextAndOffset($this->counter - 1);
+        return $offset;
     }
 }

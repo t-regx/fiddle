@@ -4,16 +4,17 @@ namespace TRegx\CleanRegex\Internal\Replace\By;
 use TRegx\CleanRegex\Exception\InternalCleanRegexException;
 use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Internal\Definition;
+use TRegx\CleanRegex\Internal\GroupKey\GroupIndex;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
-use TRegx\CleanRegex\Internal\Match\Base\Base;
 use TRegx\CleanRegex\Internal\Model\GroupAware;
 use TRegx\CleanRegex\Internal\Model\LightweightGroupAware;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\Base;
 use TRegx\CleanRegex\Internal\Replace\By\GroupMapper\DetailGroupMapper;
 use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\MatchRs;
 use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\SubjectRs;
 use TRegx\CleanRegex\Internal\Replace\Counting\CountingStrategy;
 use TRegx\CleanRegex\Internal\Subject;
-use TRegx\CleanRegex\Match\Details\LazyDetail;
+use TRegx\CleanRegex\Replace\By\LazyDetail;
 use TRegx\SafeRegex\preg;
 use function array_key_exists;
 
@@ -72,7 +73,7 @@ class GroupFallbackReplacer
         return preg::replace_callback(
             $this->definition->pattern,
             $closure,
-            $this->subject->getSubject(),
+            $this->subject,
             $this->limit,
             $replaced);
     }
@@ -80,7 +81,7 @@ class GroupFallbackReplacer
     private function validateGroup(array $match, GroupKey $group): void
     {
         if (!array_key_exists($group->nameOrIndex(), $match)) {
-            if (!$this->base->matchAllOffsets()->hasGroup($group->nameOrIndex())) {
+            if (!$this->base->matchAllOffsets()->hasGroup($group)) {
                 throw new NonexistentGroupException($group);
             }
         }
@@ -89,7 +90,7 @@ class GroupFallbackReplacer
     private function getReplacementOrHandle(array $match, GroupKey $group, DetailGroupMapper $mapper, MatchRs $substitute): string
     {
         $occurrence = $this->occurrence($match, $group);
-        $detail = new LazyDetail($this->base, $this->counter, $this->limit);
+        $detail = new LazyDetail($this->base, $this->subject, $this->counter, $this->limit);
         if ($occurrence === null) { // here "null" means group was not matched
             $replacement = $substitute->substituteGroup($detail);
             // here "null" means "no replacement provided, ignore me, use the full match"
@@ -114,7 +115,7 @@ class GroupFallbackReplacer
         }
         // With preg_replace_callback - it's impossible to distinguish unmatched group from a matched empty string
         $matches = $this->base->matchAllOffsets();
-        if (!$matches->hasGroup($this->counter)) {
+        if (!$matches->hasGroup(new GroupIndex($this->counter))) {
             // @codeCoverageIgnoreStart
             throw new InternalCleanRegexException();
             // @codeCoverageIgnoreEnd

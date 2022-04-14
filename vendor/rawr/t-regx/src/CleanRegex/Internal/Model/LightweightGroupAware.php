@@ -2,7 +2,7 @@
 namespace TRegx\CleanRegex\Internal\Model;
 
 use TRegx\CleanRegex\Internal\Definition;
-use TRegx\SafeRegex\preg;
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 
 class LightweightGroupAware implements GroupAware
 {
@@ -16,9 +16,9 @@ class LightweightGroupAware implements GroupAware
         $this->definition = $definition;
     }
 
-    public function hasGroup($nameOrIndex): bool
+    public function hasGroup(GroupKey $group): bool
     {
-        return \array_key_exists($nameOrIndex, $this->matches());
+        return \array_key_exists($group->nameOrIndex(), $this->matches());
     }
 
     public function getGroupKeys(): array
@@ -29,7 +29,7 @@ class LightweightGroupAware implements GroupAware
     private function matches(): array
     {
         if ($this->matches === null) {
-            preg::match_all($this->definition->pattern, '', $this->matches);
+            \preg_match_all($this->definition->pattern, '', $this->matches);
         }
         return $this->matches;
     }

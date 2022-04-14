@@ -112,6 +112,10 @@ class ReplaceDetail implements Detail
         return $this->detail->index();
     }
 
+    /**
+     * @return int
+     * @deprecated
+     */
     public function limit(): int
     {
         return $this->detail->limit();
@@ -162,16 +166,6 @@ class ReplaceDetail implements Detail
     public function byteTail(): int
     {
         return $this->detail->byteTail();
-    }
-
-    public function setUserData($userData): void
-    {
-        $this->detail->setUserData($userData);
-    }
-
-    public function getUserData()
-    {
-        return $this->detail->getUserData();
     }
 
     public function __toString(): string

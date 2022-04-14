@@ -1,9 +1,10 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Model;
 
+use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\Model\Match\Entry;
-use TRegx\CleanRegex\Internal\Model\Match\RawMatchOffset;
-use TRegx\CleanRegex\Internal\Model\Match\UsedForGroup;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\RawMatchOffset;
+use TRegx\CleanRegex\Internal\Pcre\Legacy\UsedForGroup;
 
 class FalseNegative implements Entry, UsedForGroup
 {
@@ -17,7 +18,7 @@ class FalseNegative implements Entry, UsedForGroup
 
     public function maybeGroupIsMissing($nameOrIndex): bool
     {
-        return !$this->match->hasGroup($nameOrIndex);
+        return !$this->match->hasGroup(GroupKey::of($nameOrIndex));
     }
 
     public function text(): string

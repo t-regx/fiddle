@@ -12,11 +12,19 @@ class NoSuchNthElementException extends \Exception implements PatternException
 
     public static function forSubject(int $index, int $total): self
     {
-        return new self("Expected to get the $index-nth match, but only $total occurrences were matched");
+        $message = "Expected to get the $index-nth match";
+        if ($total === 0) {
+            return new self("$message, but subject was not matched at all");
+        }
+        return new self("$message, but only $total occurrences were matched");
     }
 
     public static function forGroup(GroupKey $group, int $index, int $total): self
     {
-        return new self("Expected to get group $group from the $index-nth match, but only $total occurrences were matched");
+        $message = "Expected to get group $group from the $index-nth match";
+        if ($total === 0) {
+            return new self("$message, but the subject was not matched at all");
+        }
+        return new self("$message, but only $total occurrences were matched");
     }
 }

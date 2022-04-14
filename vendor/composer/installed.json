@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "rawr/t-regx",
-            "version": "0.20.2",
-            "version_normalized": "0.20.2.0",
+            "version": "0.23.0",
+            "version_normalized": "0.23.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/T-Regx/T-Regx.git",
-                "reference": "c75d65afeefd50c0e762de229888938f37cd8a31"
+                "reference": "2d177a7e6457900b333d2b0b862ed0112dd49984"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/c75d65afeefd50c0e762de229888938f37cd8a31",
-                "reference": "c75d65afeefd50c0e762de229888938f37cd8a31",
+                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/2d177a7e6457900b333d2b0b862ed0112dd49984",
+                "reference": "2d177a7e6457900b333d2b0b862ed0112dd49984",
                 "shasum": ""
             },
             "require": {
@@ -27,7 +27,7 @@
                 "rawr/fqn-check": "^1.2.0",
                 "symfony/console": "<6.0"
             },
-            "time": "2022-03-15T10:50:23+00:00",
+            "time": "2022-04-12T15:25:10+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -42,7 +42,7 @@
             "license": [
                 "MIT"
             ],
-            "description": "The most advanced PHP regexp library. Clean, descriptive wrapper functions enhancing PCRE extension methods.",
+            "description": "#StandWithUkraine",
             "keywords": [
                 "OOP",
                 "PCRE",
@@ -66,7 +66,7 @@
             ],
             "support": {
                 "issues": "https://github.com/T-Regx/T-Regx/issues",
-                "source": "https://github.com/T-Regx/T-Regx/tree/0.20.2"
+                "source": "https://github.com/T-Regx/T-Regx/tree/0.23.0"
             },
             "funding": [
                 {
