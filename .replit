@@ -1,2 +1,5 @@
-language = "php_cli"
-run = "php EXAMPLES.php"
+run = ["php", "EXAMPLES.php"]
+entrypoint = "EXAMPLES.php"
+
+[languages.php]
+pattern = "**/*.php"
