@@ -7,18 +7,21 @@ use TRegx\CleanRegex\Internal\Pcre\Legacy\MatchAllFactory;
 
 class GroupDetails
 {
-    /** @var GroupSignature */
-    private $signature;
+    /** @var GroupHandle */
+    private $handle;
     /** @var GroupKey */
     private $group;
     /** @var MatchAllFactory */
     private $allFactory;
+    /** @var GroupSignature */
+    private $signature;
 
-    public function __construct(GroupSignature $signature, GroupKey $group, MatchAllFactory $allFactory)
+    public function __construct(GroupHandle $handle, GroupKey $group, MatchAllFactory $allFactory, GroupSignature $signature)
     {
-        $this->signature = $signature;
+        $this->handle = $handle;
         $this->group = $group;
         $this->allFactory = $allFactory;
+        $this->signature = $signature;
     }
 
     public function group(): GroupKey
@@ -28,7 +31,7 @@ class GroupDetails
 
     public function all(): array
     {
-        return \array_values($this->allFactory->getRawMatches()->getGroupTexts($this->signature->index()));
+        return \array_values($this->allFactory->getRawMatches()->getGroupTexts($this->handle->groupHandle($this->group)));
     }
 
     public function nameOrIndex()

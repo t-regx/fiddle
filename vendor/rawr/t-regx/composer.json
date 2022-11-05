@@ -1,32 +1,36 @@
 {
   "name": "rawr/t-regx",
   "type": "library",
-  "description": "#StandWithUkraine",
+  "description": "PHP regular expression brought up to modern standards.",
   "license": "MIT",
   "scripts": {
-    "test": "cd vendor/phpunit && phpunit ../../test --no-coverage",
-    "fqn": "cd vendor/bin && fqn-check ../../src"
+    "test": "phpunit test --no-coverage",
+    "fqn": "fqn-check src"
   },
   "keywords": [
-    "php",
     "pcre",
     "t-regx",
+    "tregx",
     "regex",
     "regexp",
     "regular",
     "expression",
-    "tdd",
     "oop",
     "clean",
+    "pattern",
+    "match",
+    "search",
     "preg",
+    "split",
     "preg_match",
     "preg_match_all",
     "preg_replace",
     "preg_replace_callback",
     "preg_quote",
+    "preg_split",
+    "preg_last_error",
     "prepared patterns",
-    "delimiters",
-    "automatic delimiters"
+    "delimiters"
   ],
   "autoload": {
     "files": [
@@ -40,12 +44,16 @@
     "classmap": [
       "test/"
     ],
+    "files": [
+      "test/Supposition/format.php",
+      "test/Supposition/provided.php"
+    ],
     "psr-4": {
       "Test\\": "test/",
       "Test\\Feature\\TRegx\\": "test/Feature/",
       "Test\\Functional\\TRegx\\": "test/Functional/",
-      "Test\\Interaction\\TRegx\\": "test/Interaction/",
       "Test\\Structure\\TRegx\\": "test/Structure/",
+      "Test\\Supposition\\TRegx\\": "test/Supposition/",
       "Test\\Unit\\TRegx\\": "test/Unit/"
     }
   },
@@ -56,10 +64,8 @@
   "require-dev": {
     "ext-json": "*",
     "phpunit/phpunit": "^9.5.4 || ^8.0 || ^7.5",
-    "php-coveralls/php-coveralls": "^2.0",
-    "symfony/console": "<6.0",
     "rawr/cross-data-providers": "^2.3.0",
-    "rawr/fqn-check": "^1.2.0"
+    "rawr/fqn-check": "^1.3.0"
   },
   "archive": {
     "exclude": [

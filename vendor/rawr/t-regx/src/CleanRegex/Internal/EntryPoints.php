@@ -2,68 +2,68 @@
 namespace TRegx\CleanRegex\Internal;
 
 use TRegx\CleanRegex\Builder\PatternTemplate;
-use TRegx\CleanRegex\Builder\PcreBuilder;
 use TRegx\CleanRegex\Builder\TemplateBuilder;
-use TRegx\CleanRegex\Composite\CompositePattern;
 use TRegx\CleanRegex\Internal\Expression\Alteration;
 use TRegx\CleanRegex\Internal\Expression\Literal;
+use TRegx\CleanRegex\Internal\Expression\Predefinition\Predefinition;
+use TRegx\CleanRegex\Internal\Prepared\Cluster\FigureClusters;
+use TRegx\CleanRegex\Internal\Prepared\Clusters;
 use TRegx\CleanRegex\Internal\Prepared\Expression\Mask;
 use TRegx\CleanRegex\Internal\Prepared\Expression\Standard;
 use TRegx\CleanRegex\Internal\Prepared\Expression\Template;
-use TRegx\CleanRegex\Internal\Prepared\Figure\InjectFigures;
 use TRegx\CleanRegex\Internal\Prepared\Orthography\StandardOrthography;
 use TRegx\CleanRegex\Internal\Prepared\Orthography\StandardSpelling;
-use TRegx\CleanRegex\Internal\Prepared\Tokens;
 use TRegx\CleanRegex\Pattern;
+use TRegx\CleanRegex\PatternList;
 
 trait EntryPoints
 {
-    public static function of(string $pattern, string $flags = null): Pattern
+    public static function of(string $pattern, string $modifiers = null): Pattern
     {
-        return new Pattern(new Standard(new StandardSpelling($pattern, Flags::from($flags), new UnsuitableStringCondition($pattern))));
+        return new Pattern(new Standard(new StandardSpelling($pattern, Flags::from($modifiers), new UnsuitableStringCondition($pattern))));
     }
 
-    public static function inject(string $pattern, array $texts, string $flags = null): Pattern
+    public static function inject(string $pattern, array $texts, string $modifiers = null): Pattern
     {
-        return new Pattern(new Template(new StandardSpelling($pattern, Flags::from($flags), new UnsuitableStringCondition($pattern)), new InjectFigures($texts)));
+        return new Pattern(new Template(new StandardSpelling($pattern, Flags::from($modifiers), new UnsuitableStringCondition($pattern)), new FigureClusters($texts)));
     }
 
-    public static function mask(string $mask, array $keywords, string $flags = null): Pattern
+    public static function mask(string $mask, array $keywords, string $modifiers = null): Pattern
     {
-        return new Pattern(new Mask($mask, $keywords, Flags::from($flags)));
+        return new Pattern(new Mask($mask, $keywords, Flags::from($modifiers)));
     }
 
-    public static function template(string $pattern, string $flags = null): PatternTemplate
+    public static function template(string $pattern, string $modifiers = null): PatternTemplate
     {
-        return new PatternTemplate(new StandardOrthography($pattern, Flags::from($flags)));
+        return new PatternTemplate(new StandardOrthography($pattern, Flags::from($modifiers)));
     }
 
-    public static function builder(string $pattern, string $flags = null): TemplateBuilder
+    public static function builder(string $pattern, string $modifiers = null): TemplateBuilder
     {
-        return new TemplateBuilder(new StandardOrthography($pattern, Flags::from($flags)), new Tokens([]));
+        return new TemplateBuilder(new StandardOrthography($pattern, Flags::from($modifiers)), new Clusters([]));
     }
 
-    public static function literal(string $text, string $flags = null): Pattern
+    public static function literal(string $text, string $modifiers = null): Pattern
     {
-        return new Pattern(new Literal($text, Flags::from($flags)));
+        return new Pattern(new Literal($text, Flags::from($modifiers)));
     }
 
-    public static function alteration(array $texts, string $flags = null): Pattern
+    public static function alteration(array $texts, string $modifiers = null): Pattern
     {
-        return new Pattern(new Alteration($texts, Flags::from($flags)));
+        return new Pattern(new Alteration($texts, Flags::from($modifiers)));
     }
 
-    public static function pcre(): PcreBuilder
+    public static function list(array $patterns): PatternList
     {
-        return new PcreBuilder();
+        return self::patternList(new PatternStrings($patterns));
     }
 
-    public static function compose(array $patterns): CompositePattern
+    private static function patternList(PatternStrings $patterns): PatternList
     {
-        return new CompositePattern(Definitions::composed($patterns, static function (Pattern $pattern): Definition {
+        return new PatternList($patterns->predefinitions(static function (Pattern $pattern): Predefinition {
             /**
-             * {@see Pattern} instance has reference to {@see Definition} as "pattern"
-             * private field. Definition contains {@see Definition::$pattern} field,
+             * {@see Pattern} instance has reference to {@see Predefinition} as "predefinition"
+             * private field. The {@see Predefinition} contains {@see Definition} field,
              * containing a delimited PCRE pattern withs flags as a string, and another
              * field {@see Definition::$undevelopedInput}, containing pattern before it
              * has been parsed - kept for debugging purposes in client applications.
@@ -76,8 +76,8 @@ trait EntryPoints
              * in the public API for clients, perhaps as a field in thrown exceptions, that
              * clients could use for debugging.
              *
-             * In order to use composite patterns, we consume strings and Patterns as an
-             * input, and construct {@see Definition} instances with that. In case of a string,
+             * In order to use pattern lists, we consume strings and {@see Pattern} as an
+             * input, and construct {@see Definition} based on the input. In case of a string,
              * that's simple, we construct a new {@see Definition} with that. In case of a
              * {@see Pattern} instance, we could use the delimited pattern and call it a day,
              * but then the {@see Definition::$undevelopedInput} of the definition  would be
@@ -89,7 +89,7 @@ trait EntryPoints
              * {@see Pattern}, so it has access to its private fields. That's why we can just
              * pass a closure, which can map {@see Pattern} to {@see Definition}.
              */
-            return $pattern->predefinition->definition();
+            return $pattern->predefinition;
         }));
     }
 }

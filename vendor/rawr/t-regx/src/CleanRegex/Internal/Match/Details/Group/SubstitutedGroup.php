@@ -1,7 +1,7 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Details\Group;
 
-use TRegx\CleanRegex\Internal\Model\Match\Entry;
+use TRegx\CleanRegex\Internal\Model\Entry;
 
 class SubstitutedGroup
 {
@@ -21,7 +21,7 @@ class SubstitutedGroup
         $text = $this->matchEntry->text();
         $matchOffset = $this->groupEntry->byteOffset() - $this->matchEntry->byteOffset();
         $before = \substr($text, 0, $matchOffset);
-        $after = \substr($text, $matchOffset + \strlen($this->groupEntry->text()));
+        $after = \substr($text, $matchOffset + \strLen($this->groupEntry->text()));
         return $before . $replacement . $after;
     }
 }

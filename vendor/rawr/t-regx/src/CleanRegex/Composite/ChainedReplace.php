@@ -2,35 +2,29 @@
 namespace TRegx\CleanRegex\Composite;
 
 use TRegx\CleanRegex\Internal\Definition;
-use TRegx\CleanRegex\Internal\GroupKey\WholeMatch;
-use TRegx\CleanRegex\Internal\Replace\AllowAllGroupAware;
-use TRegx\CleanRegex\Internal\Replace\By\NonReplaced\SubjectRs;
+use TRegx\CleanRegex\Internal\Predefinitions;
+use TRegx\CleanRegex\Internal\Replace\Callback\CallbackInvoker;
 use TRegx\CleanRegex\Internal\Replace\Counting\IgnoreCounting;
 use TRegx\CleanRegex\Internal\Replace\ReplaceReferences;
 use TRegx\CleanRegex\Internal\Subject;
-use TRegx\CleanRegex\Replace\Callback\MatchStrategy;
-use TRegx\CleanRegex\Replace\Callback\ReplacePatternCallbackInvoker;
 use TRegx\SafeRegex\preg;
 
 class ChainedReplace
 {
-    /** @var Definition[] */
-    private $definitions;
+    /** @var Predefinitions */
+    private $predefinitions;
     /** @var Subject */
     private $subject;
-    /** @var SubjectRs */
-    private $substitute;
 
-    public function __construct(array $definitions, Subject $subject, SubjectRs $substitute)
+    public function __construct(Predefinitions $predefinitions, Subject $subject)
     {
-        $this->definitions = $definitions;
+        $this->predefinitions = $predefinitions;
         $this->subject = $subject;
-        $this->substitute = $substitute;
     }
 
     public function with(string $replacement): string
     {
-        return $this->withReferences(ReplaceReferences::quote($replacement));
+        return $this->withReferences(ReplaceReferences::escaped($replacement));
     }
 
     public function withReferences(string $replacement): string
@@ -41,7 +35,7 @@ class ChainedReplace
     private function definitionsPatterns(): array
     {
         $patterns = [];
-        foreach ($this->definitions as $definition) {
+        foreach ($this->predefinitions->definitions() as $definition) {
             $patterns[] = $definition->pattern;
         }
         return $patterns;
@@ -50,7 +44,7 @@ class ChainedReplace
     public function callback(callable $callback): string
     {
         $subject = $this->subject->asString();
-        foreach ($this->definitions as $definition) {
+        foreach ($this->predefinitions->definitions() as $definition) {
             $subject = $this->replaceNext($definition, $subject, $callback);
         }
         return $subject;
@@ -58,8 +52,7 @@ class ChainedReplace
 
     private function replaceNext(Definition $definition, string $subject, callable $callback): string
     {
-        $invoker = new ReplacePatternCallbackInvoker($definition, new Subject($subject), -1, $this->substitute, new IgnoreCounting(),
-            new AllowAllGroupAware(), new WholeMatch());
-        return $invoker->invoke($callback, new MatchStrategy());
+        $invoker = new CallbackInvoker($definition, new Subject($subject), -1, new IgnoreCounting());
+        return $invoker->invoke($callback);
     }
 }

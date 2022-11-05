@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "rawr/t-regx",
-            "version": "0.23.0",
-            "version_normalized": "0.23.0.0",
+            "version": "0.38.0",
+            "version_normalized": "0.38.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/T-Regx/T-Regx.git",
-                "reference": "2d177a7e6457900b333d2b0b862ed0112dd49984"
+                "reference": "d79e4c2a154ffdfda8c9838fb0064db162c5061f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/2d177a7e6457900b333d2b0b862ed0112dd49984",
-                "reference": "2d177a7e6457900b333d2b0b862ed0112dd49984",
+                "url": "https://api.github.com/repos/T-Regx/T-Regx/zipball/d79e4c2a154ffdfda8c9838fb0064db162c5061f",
+                "reference": "d79e4c2a154ffdfda8c9838fb0064db162c5061f",
                 "shasum": ""
             },
             "require": {
@@ -21,13 +21,11 @@
             },
             "require-dev": {
                 "ext-json": "*",
-                "php-coveralls/php-coveralls": "^2.0",
                 "phpunit/phpunit": "^9.5.4 || ^8.0 || ^7.5",
                 "rawr/cross-data-providers": "^2.3.0",
-                "rawr/fqn-check": "^1.2.0",
-                "symfony/console": "<6.0"
+                "rawr/fqn-check": "^1.3.0"
             },
-            "time": "2022-04-12T15:25:10+00:00",
+            "time": "2022-10-23T11:29:32+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -42,31 +40,35 @@
             "license": [
                 "MIT"
             ],
-            "description": "#StandWithUkraine",
+            "description": "PHP regular expression brought up to modern standards.",
             "keywords": [
+                "Match",
                 "OOP",
                 "PCRE",
-                "TDD",
-                "automatic delimiters",
                 "clean",
                 "delimiters",
                 "expression",
-                "php",
+                "pattern",
                 "preg",
+                "preg_last_error",
                 "preg_match",
                 "preg_match_all",
                 "preg_quote",
                 "preg_replace",
                 "preg_replace_callback",
+                "preg_split",
                 "prepared patterns",
                 "regex",
                 "regexp",
                 "regular",
-                "t-regx"
+                "search",
+                "split",
+                "t-regx",
+                "tregx"
             ],
             "support": {
                 "issues": "https://github.com/T-Regx/T-Regx/issues",
-                "source": "https://github.com/T-Regx/T-Regx/tree/0.23.0"
+                "source": "https://github.com/T-Regx/T-Regx/tree/0.38.0"
             },
             "funding": [
                 {
@@ -78,17 +80,17 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.25.0",
-            "version_normalized": "1.25.0.0",
+            "version": "v1.26.0",
+            "version_normalized": "1.26.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "0abb51d2f102e00a4eefcf46ba7fec406d245825"
+                "reference": "9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/0abb51d2f102e00a4eefcf46ba7fec406d245825",
-                "reference": "0abb51d2f102e00a4eefcf46ba7fec406d245825",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e",
+                "reference": "9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e",
                 "shasum": ""
             },
             "require": {
@@ -100,11 +102,11 @@
             "suggest": {
                 "ext-mbstring": "For best performance"
             },
-            "time": "2021-11-30T18:21:41+00:00",
+            "time": "2022-05-24T11:49:31+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-main": "1.23-dev"
+                    "dev-main": "1.26-dev"
                 },
                 "thanks": {
                     "name": "symfony/polyfill",
@@ -144,7 +146,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.25.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.26.0"
             },
             "funding": [
                 {

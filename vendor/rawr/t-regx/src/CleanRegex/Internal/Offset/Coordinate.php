@@ -1,7 +1,7 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Offset;
 
-use TRegx\CleanRegex\Internal\Model\Match\Entry;
+use TRegx\CleanRegex\Internal\Model\Entry;
 
 class Coordinate
 {
@@ -20,6 +20,6 @@ class Coordinate
 
     public function tail(): ByteOffset
     {
-        return new ByteOffset(\strlen($this->entry->text()) + $this->entry->byteOffset());
+        return new ByteOffset(\strLen($this->entry->text()) + $this->entry->byteOffset());
     }
 }

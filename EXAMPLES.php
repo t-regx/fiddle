@@ -2,8 +2,7 @@
 include 'vendor/autoload.php';
 
 use TRegx\CleanRegex\Pattern;
-use TRegx\CleanRegex\Match\Details\Detail;
-use TRegx\CleanRegex\Match\Details\NotMatched;
+use TRegx\CleanRegex\PcrePattern;
 
 echo "Welcome to T-Regx playground! :) \n\n";
 
@@ -21,13 +20,12 @@ yourTestCode();
 exampleTest();
 exampleAll();
 exampleFirst();
-exampleFindFirst();
 exampleCount();
-exampleAllGroup();
 exampleCapturingGroups();
 exampleOldSchoolPatterns();
 exampleUserInput();
 exampleUserInputTemplate();
+exampleUserInputBuilder();
 exampleUserInputMask();
 
 # Feel free to edit the example, if you like :)
@@ -51,7 +49,7 @@ function exampleAll()
         "a number 6 with extra dip, a number 7, two number " .
         "45s, one with cheese, and a large soda.";
 
-    $orders = pattern("\d+(s)?")->match($subject)->all();
+    $orders = pattern("\d+(s)?")->search($subject)->all();
     var_dump($orders);
 }
 
@@ -59,26 +57,10 @@ function exampleFirst()
 {
     echo "\n# Find the first element:\n";
 
-    echo pattern("(John|Brian)")
-        ->match("My name is John")
-        ->first(function (Detail $detail) {
-            return "I found a name: $detail!";
-        });
-}
+    $pattern = pattern("(John|Brian)");
+    $matcher = $pattern->match("My name is John");
 
-function exampleFindFirst()
-{
-    echo "\n\n# Find the first element, or fallback:\n";
-
-    echo pattern("(John|Brian)")
-        ->match("My name is Mark")
-        ->findFirst(function (Detail $detail) {
-            return "I found a name $detail!";
-        })
-        ->orElse(function (NotMatched $notMatched) {
-            $subject = $notMatched->subject();
-            return "Subject: '$subject' didn't contain the name :/";
-        });
+    echo "I found a name: {$matcher->first()}!";
 }
 
 function exampleCount()
@@ -93,34 +75,23 @@ function exampleCount()
     echo "The subject contains $count orders";
 }
 
-function exampleAllGroup()
-{
-    echo "\n\n# Match all:\n";
-
-    $orders = pattern('(?<value>\d+)(?<unit>[cm]?m)?')
-        ->match("14mm 18m 17 19m")
-        ->group('unit')
-        ->all();
-
-    var_dump($orders);
-}
-
 function exampleCapturingGroups()
 {
     echo "\n# Working with capturing groups:\n";
 
-    pattern('(?<value>\d+)(?<unit>[cm]?m)?')
-        ->match('12cm 14 13mm 19m 2m!')
-        ->forEach(function (Detail $detail) {
-            echo "Match: '$detail' (";
-            if ($detail->matched('unit')) {
-                echo 'Unit: ' . $detail->group('unit');
-            } else {
-                echo 'No unit';
-            }
-            $phrase = $detail->group('value')->isInt() ? 'is' : 'is not';
-            echo ") - value $phrase an integer\n";
-        });
+    $pattern = pattern('(?<value>\d+)(?<unit>[cm]?m)?');
+    $matcher = $pattern->match('12cm 14 13mm 19m 2m!');
+
+    foreach ($matcher as $detail) {
+        echo "Match: '$detail' (";
+        if ($detail->matched('unit')) {
+            echo 'Unit: ' . $detail->group('unit');
+        } else {
+            echo 'No unit';
+        }
+        $phrase = $detail->group('value')->isInt() ? 'is' : 'is not';
+        echo ") - value $phrase an integer\n";
+    }
 }
 
 function exampleOldSchoolPatterns()
@@ -128,7 +99,7 @@ function exampleOldSchoolPatterns()
     echo "\n# Example of simple and old-school patterns:\n";
 
     $simplePattern = Pattern::of('\d+/\d+[cm]?m');
-    $oldSchoolPattern = Pattern::pcre()->of('/\d+\/\d+[cm]?m/');
+    $oldSchoolPattern = PcrePattern::of('/\d+\/\d+[cm]?m/');
 
     echo "Simple match:     " . matchFirst($simplePattern) . "\n";
     echo "Old-school match: " . matchFirst($oldSchoolPattern);
@@ -154,13 +125,25 @@ function exampleUserInput()
     $pattern2 = Pattern::inject("/[ua]/(@:@)", [$user, $surname]); # Prepared pattern
 
     # Run
-    echo $pattern1->match($etcPasswd)->group(1)->first() . " - Attack successful\n";
-    echo $pattern2->match($etcPasswd)->group(1)->first() . " - Correct\n";
+    echo $pattern1->match($etcPasswd)->first()->get(1) . " - Attack successful\n";
+    echo $pattern2->match($etcPasswd)->first()->get(1) . " - Correct\n";
 }
 
 function exampleUserInputTemplate()
 {
     echo "\n\n# Working with templates:\n";
+
+    $template = Pattern::template('^:(@)?');
+    $pattern = $template->literal('*/({');
+    $matched = $pattern->test(':*/({');
+
+    echo "Matched a templated pattern:\n";
+    var_dump($matched);
+}
+
+function exampleUserInputBuilder()
+{
+    echo "\n\n# Working with templates (multiple placeholders):\n";
 
     $pattern = Pattern::builder('^@:(@)?')
         ->literal('*/({')

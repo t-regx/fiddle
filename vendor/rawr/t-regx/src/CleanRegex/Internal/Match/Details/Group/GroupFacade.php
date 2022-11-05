@@ -3,17 +3,10 @@ namespace TRegx\CleanRegex\Internal\Match\Details\Group;
 
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\GroupKey\Signatures;
-use TRegx\CleanRegex\Internal\Match\Details\Group\Handle\GroupHandle;
-use TRegx\CleanRegex\Internal\Model\Match\Entry;
 use TRegx\CleanRegex\Internal\Pcre\Legacy\MatchAllFactory;
-use TRegx\CleanRegex\Internal\Pcre\Legacy\RawMatchesOffset;
-use TRegx\CleanRegex\Internal\Pcre\Legacy\RawMatchesToMatchAdapter;
 use TRegx\CleanRegex\Internal\Pcre\Legacy\UsedForGroup;
 use TRegx\CleanRegex\Internal\Subject;
-use TRegx\CleanRegex\Match\Details\Group\Group;
-use TRegx\CleanRegex\Match\Details\Group\MatchedGroup;
-use TRegx\CleanRegex\Match\Details\Group\NotMatchedGroup;
-use TRegx\CleanRegex\Match\Details\NotMatched;
+use TRegx\CleanRegex\Match\Group;
 
 class GroupFacade
 {
@@ -21,62 +14,45 @@ class GroupFacade
     private $subject;
     /** @var GroupHandle */
     private $groupHandle;
-    /** @var GroupFactoryStrategy */
-    private $factoryStrategy;
     /** @var MatchAllFactory */
     private $allFactory;
     /** @var Signatures */
     private $signatures;
-    /** @var NotMatched */
-    private $notMatched;
 
-    public function __construct(Subject              $subject,
-                                GroupFactoryStrategy $factoryStrategy,
-                                MatchAllFactory      $allFactory,
-                                NotMatched           $notMatched,
-                                GroupHandle          $groupHandle,
-                                Signatures           $signatures)
+    public function __construct(Subject $subject, MatchAllFactory $allFactory, GroupHandle $groupHandle, Signatures $signatures)
     {
         $this->subject = $subject;
         $this->groupHandle = $groupHandle;
-        $this->factoryStrategy = $factoryStrategy;
         $this->allFactory = $allFactory;
-        $this->notMatched = $notMatched;
         $this->signatures = $signatures;
     }
 
-    public function createGroups(GroupKey $groupKey, RawMatchesOffset $matches): array
-    {
-        $groupIndexes = \array_keys($matches->getGroupTextAndOffsetAll($this->groupHandle->groupHandle($groupKey)));
-        $result = [];
-        foreach ($groupIndexes as $index) {
-            $match = new RawMatchesToMatchAdapter($matches, $index);
-            $result[$index] = $this->createGroup($groupKey, $match, $match);
-        }
-        return $result;
-    }
-
-    public function createGroup(GroupKey $group, UsedForGroup $forGroup, Entry $entry): Group
+    public function createGroup(GroupKey $group, UsedForGroup $forGroup): Group
     {
         if ($forGroup->isGroupMatched($this->groupHandle->groupHandle($group))) {
-            [$text, $offset] = $forGroup->getGroupTextAndOffset($this->groupHandle->groupHandle($group));
-            return $this->createdMatched($group, new GroupEntry($text, $offset, $this->subject), $entry);
+            return $this->createdMatched($group, $this->groupEntry($forGroup, $group));
         }
         return $this->createUnmatched($group);
     }
 
-    private function createdMatched(GroupKey $group, GroupEntry $groupEntry, Entry $entry): MatchedGroup
+    private function createdMatched(GroupKey $group, GroupEntry $groupEntry): MatchedGroup
     {
-        return $this->factoryStrategy->matched($this->subject, $this->createGroupDetails($group), $groupEntry, new SubstitutedGroup($entry, $groupEntry));
+        return new MatchedGroup($this->subject, $this->createGroupDetails($group), $groupEntry);
     }
 
     private function createUnmatched(GroupKey $group): NotMatchedGroup
     {
-        return $this->factoryStrategy->notMatched($this->subject, $this->createGroupDetails($group), $this->notMatched);
+        return new NotMatchedGroup($this->subject, $this->createGroupDetails($group));
     }
 
     private function createGroupDetails(GroupKey $group): GroupDetails
     {
-        return new GroupDetails($this->signatures->signature($group), $group, $this->allFactory);
+        return new GroupDetails($this->groupHandle, $group, $this->allFactory, $this->signatures->signature($group));
+    }
+
+    private function groupEntry(UsedForGroup $forGroup, GroupKey $group): GroupEntry
+    {
+        [$text, $offset] = $forGroup->getGroupTextAndOffset($this->groupHandle->groupHandle($group));
+        return new GroupEntry($text, $offset, $this->subject);
     }
 }

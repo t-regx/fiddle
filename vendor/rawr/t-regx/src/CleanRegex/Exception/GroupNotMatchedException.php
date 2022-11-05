@@ -10,16 +10,6 @@ class GroupNotMatchedException extends \Exception implements PatternException
         parent::__construct($message);
     }
 
-    public static function forFirst(GroupKey $group): self
-    {
-        return new self("Expected to get group $group from the first match, but the group was not matched");
-    }
-
-    public static function forNth(GroupKey $group, int $index): self
-    {
-        return new self("Expected to get group $group from the $index-nth match, but the group was not matched");
-    }
-
     public static function forMethod(GroupKey $group, string $method): self
     {
         return new self("Expected to call $method() for group $group, but the group was not matched");
@@ -33,5 +23,10 @@ class GroupNotMatchedException extends \Exception implements PatternException
     public static function forGet(GroupKey $group): self
     {
         return new self("Expected to get group $group, but the group was not matched");
+    }
+
+    public static function forGroupBy(GroupKey $group): self
+    {
+        return new self("Expected to group matches by group $group, but the group was not matched");
     }
 }

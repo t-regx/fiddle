@@ -2,16 +2,14 @@
 namespace TRegx\CleanRegex\Internal\Match\Stream;
 
 use TRegx\CleanRegex\Exception\InvalidIntegerTypeException;
+use TRegx\CleanRegex\Internal\Match\Intable;
 use TRegx\CleanRegex\Internal\Match\Numeral\IntegerBase;
 use TRegx\CleanRegex\Internal\Match\Numeral\StreamExceptions;
 use TRegx\CleanRegex\Internal\Numeral\Base;
 use TRegx\CleanRegex\Internal\Type\ValueType;
-use TRegx\CleanRegex\Match\Details\Intable;
 
 class IntegerStream implements Upstream
 {
-    use PreservesKey;
-
     /** @var Upstream */
     private $upstream;
     /** @var IntegerBase */
@@ -28,9 +26,10 @@ class IntegerStream implements Upstream
         return \array_map([$this, 'number'], $this->upstream->all());
     }
 
-    public function first(): int
+    public function first(): array
     {
-        return $this->number($this->upstream->first());
+        [$key, $value] = $this->upstream->first();
+        return [$key, $this->number($value)];
     }
 
     private function number($value): int

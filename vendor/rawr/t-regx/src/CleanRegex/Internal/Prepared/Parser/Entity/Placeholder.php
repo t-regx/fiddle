@@ -1,23 +1,25 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Prepared\Parser\Entity;
 
+use TRegx\CleanRegex\Internal\Prepared\Cluster\ExpectedClusters;
 use TRegx\CleanRegex\Internal\Prepared\Phrase\Phrase;
-use TRegx\CleanRegex\Internal\Prepared\Template\Token;
 
 class Placeholder implements Entity
 {
     use TransitiveFlags;
 
-    /** @var Token */
-    private $token;
+    /** @var ExpectedClusters */
+    private $clusters;
 
-    public function __construct(Token $token)
+    public function __construct(ExpectedClusters $clusters)
     {
-        $this->token = $token;
+        $this->clusters = $clusters;
     }
 
     public function phrase(): Phrase
     {
-        return $this->token->phrase();
+        $cluster = $this->clusters->current();
+        $this->clusters->next();
+        return $cluster->phrase();
     }
 }

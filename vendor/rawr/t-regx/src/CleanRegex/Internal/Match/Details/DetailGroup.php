@@ -6,23 +6,17 @@ use TRegx\CleanRegex\Exception\NonexistentGroupException;
 use TRegx\CleanRegex\Internal\GroupKey\GroupKey;
 use TRegx\CleanRegex\Internal\GroupKey\Signatures;
 use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFacade;
-use TRegx\CleanRegex\Internal\Match\Details\Group\GroupFactoryStrategy;
-use TRegx\CleanRegex\Internal\Match\Details\Group\Handle\FirstNamedGroup;
-use TRegx\CleanRegex\Internal\Match\Details\Group\Handle\GroupHandle;
+use TRegx\CleanRegex\Internal\Match\Details\Group\GroupHandle;
 use TRegx\CleanRegex\Internal\Model\GroupAware;
-use TRegx\CleanRegex\Internal\Model\Match\Entry;
 use TRegx\CleanRegex\Internal\Pcre\Legacy\MatchAllFactory;
 use TRegx\CleanRegex\Internal\Pcre\Legacy\UsedForGroup;
 use TRegx\CleanRegex\Internal\Subject;
-use TRegx\CleanRegex\Match\Details\Group\Group;
-use TRegx\CleanRegex\Match\Details\NotMatched;
+use TRegx\CleanRegex\Match\Group;
 
 class DetailGroup
 {
     /** @var GroupAware */
     private $groupAware;
-    /** @var Entry */
-    private $entry;
     /** @var UsedForGroup */
     private $usedForGroup;
     /** @var GroupHandle */
@@ -31,19 +25,16 @@ class DetailGroup
     private $groupFacade;
 
     public function __construct(
-        GroupAware           $groupAware,
-        Entry                $matchEntry,
-        UsedForGroup         $usedForGroup,
-        Signatures           $signatures,
-        GroupFactoryStrategy $strategy,
-        MatchAllFactory      $allFactory,
-        Subject              $subject)
+        GroupAware      $groupAware,
+        UsedForGroup    $usedForGroup,
+        Signatures      $signatures,
+        MatchAllFactory $allFactory,
+        Subject         $subject)
     {
         $this->groupAware = $groupAware;
-        $this->entry = $matchEntry;
         $this->usedForGroup = $usedForGroup;
-        $this->groupHandle = new FirstNamedGroup($signatures);
-        $this->groupFacade = new GroupFacade($subject, $strategy, $allFactory, new NotMatched($groupAware, $subject), $this->groupHandle, $signatures);
+        $this->groupHandle = new GroupHandle($signatures);
+        $this->groupFacade = new GroupFacade($subject, $allFactory, $this->groupHandle, $signatures);
     }
 
     public function exists(GroupKey $group): bool
@@ -62,7 +53,7 @@ class DetailGroup
     public function group(GroupKey $group): Group
     {
         if ($this->exists($group)) {
-            return $this->groupFacade->createGroup($group, $this->usedForGroup, $this->entry);
+            return $this->groupFacade->createGroup($group, $this->usedForGroup);
         }
         throw new NonexistentGroupException($group);
     }

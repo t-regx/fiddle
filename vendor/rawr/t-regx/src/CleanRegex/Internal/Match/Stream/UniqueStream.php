@@ -3,8 +3,6 @@ namespace TRegx\CleanRegex\Internal\Match\Stream;
 
 class UniqueStream implements Upstream
 {
-    use PreservesKey;
-
     /** @var Upstream */
     private $upstream;
 
@@ -15,10 +13,17 @@ class UniqueStream implements Upstream
 
     public function all(): array
     {
-        return \array_unique($this->upstream->all());
+        $distinct = [];
+        foreach ($this->upstream->all() as $key => $value) {
+            if (\in_array($value, $distinct, true)) {
+                continue;
+            }
+            $distinct[$key] = $value;
+        }
+        return $distinct;
     }
 
-    public function first()
+    public function first(): array
     {
         return $this->upstream->first();
     }

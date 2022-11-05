@@ -2,29 +2,34 @@
 namespace TRegx\CleanRegex\Match;
 
 use TRegx\CleanRegex\Exception\NoSuchStreamElementException;
-use TRegx\CleanRegex\Internal\Match\FlatFunction;
-use TRegx\CleanRegex\Internal\Match\FlatMap\ArrayMergeStrategy;
-use TRegx\CleanRegex\Internal\Match\FlatMap\AssignStrategy;
+use TRegx\CleanRegex\Internal\EmptyOptional;
+use TRegx\CleanRegex\Internal\Index;
+use TRegx\CleanRegex\Internal\Limit;
+use TRegx\CleanRegex\Internal\Match\ArrayFunction;
+use TRegx\CleanRegex\Internal\Match\Flat\DictionaryFunction;
+use TRegx\CleanRegex\Internal\Match\Flat\ListFunction;
 use TRegx\CleanRegex\Internal\Match\GroupByFunction;
 use TRegx\CleanRegex\Internal\Match\PresentOptional;
+use TRegx\CleanRegex\Internal\Match\Stream\Base\UnmatchedStreamException;
 use TRegx\CleanRegex\Internal\Match\Stream\EmptyStreamException;
 use TRegx\CleanRegex\Internal\Match\Stream\FilterStream;
 use TRegx\CleanRegex\Internal\Match\Stream\FlatMapStream;
 use TRegx\CleanRegex\Internal\Match\Stream\GroupByCallbackStream;
 use TRegx\CleanRegex\Internal\Match\Stream\IntegerStream;
 use TRegx\CleanRegex\Internal\Match\Stream\KeyStream;
+use TRegx\CleanRegex\Internal\Match\Stream\LimitStream;
+use TRegx\CleanRegex\Internal\Match\Stream\MapEntriesStream;
 use TRegx\CleanRegex\Internal\Match\Stream\MapStream;
 use TRegx\CleanRegex\Internal\Match\Stream\NthStreamElement;
-use TRegx\CleanRegex\Internal\Match\Stream\RejectedOptional;
-use TRegx\CleanRegex\Internal\Match\Stream\StreamRejectedException;
+use TRegx\CleanRegex\Internal\Match\Stream\SkipStream;
+use TRegx\CleanRegex\Internal\Match\Stream\StreamTerminal;
 use TRegx\CleanRegex\Internal\Match\Stream\UniqueStream;
 use TRegx\CleanRegex\Internal\Match\Stream\Upstream;
-use TRegx\CleanRegex\Internal\Match\Stream\ValuesStream;
-use TRegx\CleanRegex\Internal\Match\StreamTerminal;
+use TRegx\CleanRegex\Internal\Match\Stream\ValueStream;
 use TRegx\CleanRegex\Internal\Message\Stream\FromFirstStreamMessage;
+use TRegx\CleanRegex\Internal\Message\SubjectNotMatched\FirstMatchMessage;
 use TRegx\CleanRegex\Internal\Numeral;
 use TRegx\CleanRegex\Internal\Predicate;
-use TRegx\CleanRegex\Internal\Subject;
 
 class Stream implements \Countable, \IteratorAggregate
 {
@@ -34,25 +39,17 @@ class Stream implements \Countable, \IteratorAggregate
     private $upstream;
     /** @var NthStreamElement */
     private $nth;
-    /** @var Subject */
-    private $subject;
 
-    public function __construct(Upstream $upstream, Subject $subject)
+    public function __construct(Upstream $upstream)
     {
         $this->terminal = new StreamTerminal($upstream);
         $this->upstream = $upstream;
-        $this->nth = new NthStreamElement($upstream, $subject);
-        $this->subject = $subject;
+        $this->nth = new NthStreamElement($upstream);
     }
 
     public function all(): array
     {
         return $this->terminal->all();
-    }
-
-    public function only(int $limit): array
-    {
-        return $this->terminal->only($limit);
     }
 
     public function forEach(callable $consumer): void
@@ -75,41 +72,36 @@ class Stream implements \Countable, \IteratorAggregate
         return $this->terminal->reduce($reducer, $accumulator);
     }
 
-    public function first(callable $consumer = null)
-    {
-        if ($consumer === null) {
-            return $this->firstOptional()->orThrow();
-        }
-        return $this->firstOptional()->map($consumer)->orThrow();
-    }
-
-    public function findFirst(callable $consumer): Optional
-    {
-        return $this->firstOptional()->map($consumer);
-    }
-
-    private function firstOptional(): Optional
+    public function first()
     {
         try {
-            return new PresentOptional($this->upstream->first());
-        } catch (StreamRejectedException $exception) {
-            return new RejectedOptional(new NoSuchStreamElementException($exception->notMatchedMessage()));
+            [$key, $value] = $this->upstream->first();
+            return $value;
         } catch (EmptyStreamException $exception) {
-            return new RejectedOptional(new NoSuchStreamElementException(new FromFirstStreamMessage()));
+            throw new NoSuchStreamElementException(new FromFirstStreamMessage());
+        } catch (UnmatchedStreamException $exception) {
+            throw new NoSuchStreamElementException(new FirstMatchMessage());
+        }
+    }
+
+    public function findFirst(): Optional
+    {
+        try {
+            [$key, $value] = $this->upstream->first();
+            return new PresentOptional($value);
+        } catch (EmptyStreamException | UnmatchedStreamException $exception) {
+            return new EmptyOptional();
         }
     }
 
     public function nth(int $index)
     {
-        return $this->findNth($index)->orThrow();
+        return $this->nth->value(new Index($index));
     }
 
     public function findNth(int $index): Optional
     {
-        if ($index < 0) {
-            throw new \InvalidArgumentException("Negative index: $index");
-        }
-        return $this->nth->optional($index);
+        return $this->nth->optional(new Index($index));
     }
 
     public function map(callable $mapper): Stream
@@ -117,14 +109,19 @@ class Stream implements \Countable, \IteratorAggregate
         return $this->next(new MapStream($this->upstream, $mapper));
     }
 
-    public function flatMap(callable $mapper): Stream
+    public function mapEntries(callable $mapper): Stream
     {
-        return $this->next(new FlatMapStream($this->upstream, new ArrayMergeStrategy(), new FlatFunction($mapper, 'flatMap')));
+        return $this->next(new MapEntriesStream($this->upstream, $mapper));
     }
 
-    public function flatMapAssoc(callable $mapper): Stream
+    public function flatMap(callable $mapper): Stream
     {
-        return $this->next(new FlatMapStream($this->upstream, new AssignStrategy(), new FlatFunction($mapper, 'flatMapAssoc')));
+        return $this->next(new FlatMapStream($this->upstream, new ListFunction(new ArrayFunction($mapper, 'flatMap'))));
+    }
+
+    public function toMap(callable $mapper): Stream
+    {
+        return $this->next(new FlatMapStream($this->upstream, new DictionaryFunction(new ArrayFunction($mapper, 'toMap'))));
     }
 
     public function distinct(): Stream
@@ -139,7 +136,7 @@ class Stream implements \Countable, \IteratorAggregate
 
     public function values(): Stream
     {
-        return $this->next(new ValuesStream($this->upstream));
+        return $this->next(new ValueStream($this->upstream));
     }
 
     public function keys(): Stream
@@ -147,7 +144,7 @@ class Stream implements \Countable, \IteratorAggregate
         return $this->next(new KeyStream($this->upstream));
     }
 
-    public function asInt(int $base = null): Stream
+    public function asInt(int $base = 10): Stream
     {
         return $this->next(new IntegerStream($this->upstream, new Numeral\Base($base)));
     }
@@ -157,8 +154,21 @@ class Stream implements \Countable, \IteratorAggregate
         return $this->next(new GroupByCallbackStream($this->upstream, new GroupByFunction('groupByCallback', $groupMapper)));
     }
 
+    public function limit(int $limit): Stream
+    {
+        return $this->next(new LimitStream($this->upstream, new Limit($limit)));
+    }
+
+    public function skip(int $offset): Stream
+    {
+        if ($offset < 0) {
+            throw new \InvalidArgumentException("Negative offset: $offset");
+        }
+        return $this->next(new SkipStream($this->upstream, $offset));
+    }
+
     private function next(Upstream $upstream): Stream
     {
-        return new Stream($upstream, $this->subject);
+        return new Stream($upstream);
     }
 }

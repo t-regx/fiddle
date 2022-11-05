@@ -2,51 +2,29 @@
 namespace TRegx\CleanRegex\Internal\Prepared\Expression;
 
 use TRegx\CleanRegex\Exception\ExplicitDelimiterRequiredException;
-use TRegx\CleanRegex\Internal\Delimiter\Delimiter;
 use TRegx\CleanRegex\Internal\Delimiter\UndelimitablePatternException;
 use TRegx\CleanRegex\Internal\Expression\Expression;
-use TRegx\CleanRegex\Internal\Flags;
-use TRegx\CleanRegex\Internal\Prepared\Dictionary;
-use TRegx\CleanRegex\Internal\Prepared\Figure\CountedFigures;
+use TRegx\CleanRegex\Internal\Expression\Predefinition\Predefinition;
+use TRegx\CleanRegex\Internal\Prepared\Cluster\CountedClusters;
 use TRegx\CleanRegex\Internal\Prepared\Orthography\Spelling;
-use TRegx\CleanRegex\Internal\Prepared\Phrase\Phrase;
+use TRegx\CleanRegex\Internal\Prepared\Placeholders\ClustersPlaceholders;
 
 class Template implements Expression
 {
-    use PredefinedExpression;
+    /** @var DelimiterExpression */
+    private $expression;
 
-    /** @var Spelling */
-    private $spelling;
-    /** @var Dictionary */
-    private $dictionary;
-
-    public function __construct(Spelling $spelling, CountedFigures $figures)
+    public function __construct(Spelling $spelling, CountedClusters $clusters)
     {
-        $this->spelling = $spelling;
-        $this->dictionary = new Dictionary($spelling, $figures);
+        $this->expression = new DelimiterExpression($spelling, new ClustersPlaceholders($clusters));
     }
 
-    protected function phrase(): Phrase
-    {
-        return $this->dictionary->compositePhrase();
-    }
-
-    protected function delimiter(): Delimiter
+    public function predefinition(): Predefinition
     {
         try {
-            return $this->spelling->delimiter();
+            return $this->expression->predefinition();
         } catch (UndelimitablePatternException $exception) {
             throw ExplicitDelimiterRequiredException::forTemplate();
         }
-    }
-
-    protected function flags(): Flags
-    {
-        return $this->spelling->flags();
-    }
-
-    protected function undevelopedInput(): string
-    {
-        return $this->spelling->undevelopedInput();
     }
 }

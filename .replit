@@ -3,3 +3,6 @@ entrypoint = "EXAMPLES.php"
 
 [languages.php]
 pattern = "**/*.php"
+
+[nix]
+channel = "stable-21_11"

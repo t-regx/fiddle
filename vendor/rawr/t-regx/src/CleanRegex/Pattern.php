@@ -2,13 +2,15 @@
 namespace TRegx\CleanRegex;
 
 use TRegx\CleanRegex\ForArray\ForArrayPattern;
-use TRegx\CleanRegex\Internal\Cut;
 use TRegx\CleanRegex\Internal\EntryPoints;
 use TRegx\CleanRegex\Internal\Expression\Expression;
 use TRegx\CleanRegex\Internal\Expression\Predefinition\Predefinition;
+use TRegx\CleanRegex\Internal\Needle;
+use TRegx\CleanRegex\Internal\Splits;
 use TRegx\CleanRegex\Internal\Subject;
-use TRegx\CleanRegex\Match\MatchPattern;
-use TRegx\CleanRegex\Replace\ReplaceLimit;
+use TRegx\CleanRegex\Match\Matcher;
+use TRegx\CleanRegex\Match\Search;
+use TRegx\CleanRegex\Replace\Replace;
 use TRegx\SafeRegex\preg;
 
 class Pattern
@@ -17,10 +19,13 @@ class Pattern
 
     /** @var Predefinition */
     private $predefinition;
+    /** @var Needle */
+    private $needle;
 
     public function __construct(Expression $expression)
     {
         $this->predefinition = $expression->predefinition();
+        $this->needle = new Needle($this->predefinition);
     }
 
     public function test(string $subject): bool
@@ -33,14 +38,19 @@ class Pattern
         return preg::match($this->predefinition->definition()->pattern, $subject) === 0;
     }
 
-    public function match(string $subject): MatchPattern
+    public function search(string $subject): Search
     {
-        return new MatchPattern($this->predefinition->definition(), new Subject($subject));
+        return new Search($this->predefinition->definition(), new Subject($subject));
     }
 
-    public function replace(string $subject): ReplaceLimit
+    public function match(string $subject): Matcher
     {
-        return new ReplaceLimit($this->predefinition->definition(), new Subject($subject));
+        return new Matcher($this->predefinition->definition(), new Subject($subject));
+    }
+
+    public function replace(string $subject): Replace
+    {
+        return new Replace($this->predefinition->definition(), new Subject($subject));
     }
 
     public function prune(string $subject): string
@@ -53,15 +63,36 @@ class Pattern
         return new ForArrayPattern($this->predefinition->definition(), $haystack);
     }
 
-    public function split(string $subject): array
-    {
-        return preg::split($this->predefinition->definition()->pattern, $subject, -1, \PREG_SPLIT_DELIM_CAPTURE);
-    }
-
+    /**
+     * @return string[]
+     */
     public function cut(string $subject): array
     {
-        $cut = new Cut($this->predefinition->definition());
-        return $cut->twoPieces($subject);
+        return $this->needle->twoPieces($subject);
+    }
+
+    /**
+     * @return string[]
+     */
+    public function split(string $subject): array
+    {
+        return $this->needle->splitAll($subject);
+    }
+
+    /**
+     * @return string[]
+     */
+    public function splitStart(string $subject, int $maxSplits): array
+    {
+        return $this->needle->splitFromStart($subject, new Splits($maxSplits));
+    }
+
+    /**
+     * @return string[]
+     */
+    public function splitEnd(string $subject, int $maxSplits): array
+    {
+        return $this->needle->splitFromEnd($subject, new Splits($maxSplits));
     }
 
     public function count(string $subject): int

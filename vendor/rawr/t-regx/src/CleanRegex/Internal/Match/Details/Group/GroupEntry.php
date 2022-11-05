@@ -1,7 +1,7 @@
 <?php
 namespace TRegx\CleanRegex\Internal\Match\Details\Group;
 
-use TRegx\CleanRegex\Internal\Model\Match\Entry;
+use TRegx\CleanRegex\Internal\Model\Entry;
 use TRegx\CleanRegex\Internal\Offset\ByteOffset;
 use TRegx\CleanRegex\Internal\Subject;
 
@@ -21,7 +21,7 @@ class GroupEntry implements Entry
         $this->text = $text;
         $this->subject = $subject;
         $this->offset = new ByteOffset($byteOffset);
-        $this->tail = new ByteOffset($byteOffset + \strlen($this->text));
+        $this->tail = new ByteOffset($byteOffset + \strLen($this->text));
     }
 
     public function text(): string
